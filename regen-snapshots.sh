@@ -13,3 +13,5 @@
   --global-record-lens-file snapshots/UseGlobalPropFile/GlobalRecordLens.purs \
   --global-record-lens-module Snapshots.UseGlobalPropFile.GlobalRecordLens \
   snapshots/UseGlobalPropFile
+
+./tidy-mklens snapshots/PrimaryExample.purs
