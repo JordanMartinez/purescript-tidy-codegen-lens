@@ -14,7 +14,7 @@ import Snapshots.Imports.ImportedExplicitTypesNoModuleAlias (MyAlias, MyData, My
 import Snapshots.Imports.ImportedExplicitTypesWithModuleAlias as Shared
 import Snapshots.Imports.ModuleAliasOnly as Q
 import Snapshots.Imports.SharedModuleAlias as Shared
-import Snapshots.PrimaryExample (AliasDefinedInSourceFile, FfiTypeDefinedInSourceFile, DataDefinedInSourceFile(..), Data_NoTyVars_Args0(..), Data_NoTyVars_Args1(..), Data_NoTyVars_Args2(..), Data_NoTyVars_Args3(..), Data_Product_ImportedTypesAreReimported(..), Data_Sum_ImportedTypesAreReimported(..), Data_TyVars_Args0(..), Data_TyVars_Args1(..), Data_TyVars_Args2(..), Data_TyVars_Args3(..), EnsureSharedImportIsUsed(..), NewtypeDefinedInSourceFile(..), NewtypedRecord(..), NewtypedType(..), Record_ImportedTypesAreReimported(..))
+import Snapshots.PrimaryExample (AliasDefinedInSourceFile, FfiTypeDefinedInSourceFile, DataDefinedInSourceFile(..), Data_NoTyVars_Args0(..), Data_NoTyVars_Args1(..), Data_NoTyVars_Args2(..), Data_NoTyVars_Args3(..), Data_NoTyVars_Sum_Args0(..), Data_NoTyVars_Sum_Args1(..), Data_NoTyVars_Sum_Args2(..), Data_NoTyVars_Sum_Args3(..), Data_Product_ImportedTypesAreReimported(..), Data_Sum_ImportedTypesAreReimported(..), Data_TyVars_Args0(..), Data_TyVars_Args1(..), Data_TyVars_Args2(..), Data_TyVars_Args3(..), Data_TyVars_Sum_Args0(..), Data_TyVars_Sum_Args1(..), Data_TyVars_Sum_Args2(..), Data_TyVars_Sum_Args3(..), EnsureSharedImportIsUsed(..), NewtypeDefinedInSourceFile(..), NewtypedRecord(..), NewtypedType(..), Record_ImportedTypesAreReimported(..))
 import Type.Proxy (Proxy(..))
 
 _Data_NoTyVars_Args0 :: Lens' Data_NoTyVars_Args0 Unit
@@ -48,6 +48,90 @@ _Data_TyVars_Args3
 _Data_TyVars_Args3 = lens
   (\(Data_TyVars_Args3 arg1 arg2 arg3) -> { arg1: arg1, arg2: arg2, arg3: arg3 })
   \{ arg1, arg2, arg3 } -> Data_TyVars_Args3 arg1 arg2 arg3
+
+_Data_NoTyVars_Sum_Args0 :: Prism' Data_NoTyVars_Sum_Args0 Unit
+_Data_NoTyVars_Sum_Args0 = prism (const Data_NoTyVars_Sum_Args0) case _ of
+  Data_NoTyVars_Sum_Args0 -> Right unit
+  other -> Left other
+
+_Data_NoTyVars_Sum_Args0_Ignored :: Prism' Data_NoTyVars_Sum_Args0 Unit
+_Data_NoTyVars_Sum_Args0_Ignored = prism (const Data_NoTyVars_Sum_Args0_Ignored) case _ of
+  Data_NoTyVars_Sum_Args0_Ignored -> Right unit
+  other -> Left other
+
+_Data_NoTyVars_Sum_Args1 :: Prism' Data_NoTyVars_Sum_Args1 Int
+_Data_NoTyVars_Sum_Args1 = prism Data_NoTyVars_Sum_Args1 case _ of
+  Data_NoTyVars_Sum_Args1 a -> Right a
+  other -> Left other
+
+_Data_NoTyVars_Sum_Args1_Ignored :: Prism' Data_NoTyVars_Sum_Args1 Unit
+_Data_NoTyVars_Sum_Args1_Ignored = prism (const Data_NoTyVars_Sum_Args1_Ignored) case _ of
+  Data_NoTyVars_Sum_Args1_Ignored -> Right unit
+  other -> Left other
+
+_Data_NoTyVars_Sum_Args2 :: Prism' Data_NoTyVars_Sum_Args2 (Tuple Int Int)
+_Data_NoTyVars_Sum_Args2 = prism (\(Tuple a b) -> Data_NoTyVars_Sum_Args2 a b) case _ of
+  Data_NoTyVars_Sum_Args2 a b -> Right (Tuple a b)
+  other -> Left other
+
+_Data_NoTyVars_Sum_Args2_Ignored :: Prism' Data_NoTyVars_Sum_Args2 Unit
+_Data_NoTyVars_Sum_Args2_Ignored = prism (const Data_NoTyVars_Sum_Args2_Ignored) case _ of
+  Data_NoTyVars_Sum_Args2_Ignored -> Right unit
+  other -> Left other
+
+_Data_NoTyVars_Sum_Args3 :: Prism' Data_NoTyVars_Sum_Args3
+  { arg1 :: Int, arg2 :: Int, arg3 :: Int }
+_Data_NoTyVars_Sum_Args3 = prism (\{ arg1, arg2, arg3 } -> Data_NoTyVars_Sum_Args3 arg1 arg2 arg3)
+  case _ of
+    Data_NoTyVars_Sum_Args3 arg1 arg2 arg3 -> Right { arg1: arg1, arg2: arg2, arg3: arg3 }
+    other -> Left other
+
+_Data_NoTyVars_Sum_Args3_Ignored :: Prism' Data_NoTyVars_Sum_Args3 Unit
+_Data_NoTyVars_Sum_Args3_Ignored = prism (const Data_NoTyVars_Sum_Args3_Ignored) case _ of
+  Data_NoTyVars_Sum_Args3_Ignored -> Right unit
+  other -> Left other
+
+_Data_TyVars_Sum_Args0 :: forall a b c d. Prism' (Data_TyVars_Sum_Args0 a b c d) Unit
+_Data_TyVars_Sum_Args0 = prism (const Data_TyVars_Sum_Args0) case _ of
+  Data_TyVars_Sum_Args0 -> Right unit
+  other -> Left other
+
+_Data_TyVars_Sum_Args0_Ignored :: forall a b c d. Prism' (Data_TyVars_Sum_Args0 a b c d) Unit
+_Data_TyVars_Sum_Args0_Ignored = prism (const Data_TyVars_Sum_Args0_Ignored) case _ of
+  Data_TyVars_Sum_Args0_Ignored -> Right unit
+  other -> Left other
+
+_Data_TyVars_Sum_Args1 :: forall a b c d. Prism' (Data_TyVars_Sum_Args1 a b c d) a
+_Data_TyVars_Sum_Args1 = prism Data_TyVars_Sum_Args1 case _ of
+  Data_TyVars_Sum_Args1 a -> Right a
+  other -> Left other
+
+_Data_TyVars_Sum_Args1_Ignored :: forall a b c d. Prism' (Data_TyVars_Sum_Args1 a b c d) Unit
+_Data_TyVars_Sum_Args1_Ignored = prism (const Data_TyVars_Sum_Args1_Ignored) case _ of
+  Data_TyVars_Sum_Args1_Ignored -> Right unit
+  other -> Left other
+
+_Data_TyVars_Sum_Args2 :: forall a b c d. Prism' (Data_TyVars_Sum_Args2 a b c d) (Tuple a b)
+_Data_TyVars_Sum_Args2 = prism (\(Tuple a b) -> Data_TyVars_Sum_Args2 a b) case _ of
+  Data_TyVars_Sum_Args2 a b -> Right (Tuple a b)
+  other -> Left other
+
+_Data_TyVars_Sum_Args2_Ignored :: forall a b c d. Prism' (Data_TyVars_Sum_Args2 a b c d) Unit
+_Data_TyVars_Sum_Args2_Ignored = prism (const Data_TyVars_Sum_Args2_Ignored) case _ of
+  Data_TyVars_Sum_Args2_Ignored -> Right unit
+  other -> Left other
+
+_Data_TyVars_Sum_Args3
+  :: forall a b c d. Prism' (Data_TyVars_Sum_Args3 a b c d) { arg1 :: a, arg2 :: b, arg3 :: c }
+_Data_TyVars_Sum_Args3 = prism (\{ arg1, arg2, arg3 } -> Data_TyVars_Sum_Args3 arg1 arg2 arg3)
+  case _ of
+    Data_TyVars_Sum_Args3 arg1 arg2 arg3 -> Right { arg1: arg1, arg2: arg2, arg3: arg3 }
+    other -> Left other
+
+_Data_TyVars_Sum_Args3_Ignored :: forall a b c d. Prism' (Data_TyVars_Sum_Args3 a b c d) Unit
+_Data_TyVars_Sum_Args3_Ignored = prism (const Data_TyVars_Sum_Args3_Ignored) case _ of
+  Data_TyVars_Sum_Args3_Ignored -> Right unit
+  other -> Left other
 
 _NewtypedRecord :: Lens' NewtypedRecord
   { first :: String

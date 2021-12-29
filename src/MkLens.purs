@@ -593,7 +593,7 @@ genPrismSum opt importMap tyName ctorName tyVars ctorNameStr fields = do
                   (exprApp (exprCtor ctorName) [ exprIdent "a", exprIdent "b" ])
               , exprCase [ exprSection ]
                   [ caseBranch [ binderCtor ctorName [ binderVar "a", binderVar "b" ] ]
-                      (exprApp (exprCtor eitherRec.rightCtor) [ exprIdent "a", exprIdent "b" ])
+                      (exprApp (exprCtor eitherRec.rightCtor) [ exprApp (exprCtor tupleRec.ctor) [ exprIdent "a", exprIdent "b" ] ])
                   , caseBranch [ binderVar "other" ]
                       (exprApp (exprCtor eitherRec.leftCtor) [ exprIdent "other" ])
                   ]
