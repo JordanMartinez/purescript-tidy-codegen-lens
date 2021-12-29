@@ -1,5 +1,10 @@
 module Snapshots.UseLocalProps.Module1 where
 
+import Snapshots.Imports.ImportedExplicitTypesNoModuleAlias (MyAlias, MyData, MyNewtype)
+import Snapshots.Imports.ImportedExplicitTypesWithModuleAlias (MyData, MyNewtype, MyAlias) as Shared
+import Snapshots.Imports.ModuleAliasOnly as Q
+import Snapshots.Imports.SharedModuleAlias as Shared
+
 data Data_NoTyVars_Args0 = Data_NoTyVars_Args0
 
 data Data_NoTyVars_Args1 = Data_NoTyVars_Args1 Int
@@ -40,3 +45,51 @@ type SameLabelsAsOtherModule =
   , bumblebee :: String
   , "力" :: String
   }
+
+data DataDefinedInSourceFile = DataDefinedInSourceFile
+newtype NewtypeDefinedInSourceFile = NewtypeDefinedInSourceFile Int
+type AliasDefinedInSourceFile = Int
+foreign import data FfiTypeDefinedInSourceFile :: Type
+
+data Data_Product_ImportedTypesAreReimported
+  = Data_Product_ImportedTypesAreReimported
+      (MyData Int Int Int) (MyAlias String) (MyNewtype Int Int Int)
+      (Q.MyData Int Int Int) (Q.MyAlias String) (Q.MyNewtype Int Int Int)
+      (Shared.MyData Int Int Int) (Shared.MyAlias String) (Shared.MyNewtype Int Int Int)
+      DataDefinedInSourceFile NewtypeDefinedInSourceFile AliasDefinedInSourceFile FfiTypeDefinedInSourceFile
+
+data Data_Sum_ImportedTypesAreReimported
+  = Data_Sum_ImportedTypesAreReimported
+      (MyData Int Int Int) (MyAlias String) (MyNewtype Int Int Int)
+      (Q.MyData Int Int Int) (Q.MyAlias String) (Q.MyNewtype Int Int Int)
+      (Shared.MyData Int Int Int) (Shared.MyAlias String) (Shared.MyNewtype Int Int Int)
+      DataDefinedInSourceFile NewtypeDefinedInSourceFile AliasDefinedInSourceFile FfiTypeDefinedInSourceFile
+  | Data_Sum_ImportedTypesAreReimported_IgnoredCase
+
+newtype Record_ImportedTypesAreReimported = Record_ImportedTypesAreReimported
+  { noAlias ::
+      { myData :: MyData Int Int Int
+      , myAlias :: MyAlias String
+      , myNewtype :: MyNewtype Int Int Int
+      }
+  , aliasOnly ::
+      { myData :: Q.MyData Int Int Int
+      , myAlias :: Q.MyAlias String
+      , myNewtype :: Q.MyNewtype Int Int Int
+      }
+  , sharedAlias ::
+      { myData :: Shared.MyData Int Int Int
+      , myAlias :: Shared.MyAlias String
+      , myNewtype :: Shared.MyNewtype Int Int Int
+      }
+  , definedInSourceFile ::
+      { myData :: DataDefinedInSourceFile
+      , myAlias :: AliasDefinedInSourceFile
+      , myNewtype :: NewtypeDefinedInSourceFile
+      , myFfi :: FfiTypeDefinedInSourceFile
+      }
+  }
+
+data EnsureSharedImportIsUsed =
+  EnsureSharedImportIsUsed
+    (Shared.SharedMyData Int Int Int) (Shared.SharedMyAlias String) (Shared.SharedMyNewtype Int Int Int)
