@@ -12,7 +12,7 @@ _Product
   :: forall a b c d e f g h
    . Lens' (Product a b c d e f g h)
        { a :: a, b :: b, c :: c, d :: d, e :: e, f :: f, g :: g, h :: h }
-_Product = lens (\Product a b c d e f g h -> { a: a, b: b, c: c, d: d, e: e, f: f, g: g, h: h })
+_Product = lens (\(Product a b c d e f g h) -> { a: a, b: b, c: c, d: d, e: e, f: f, g: g, h: h })
   \{ a, b, c, d, e, f, g, h } -> Product a b c d e f g h
 
 _Ignore :: forall a b c d e f g h. Prism' (Sum a b c d e f g h) Unit

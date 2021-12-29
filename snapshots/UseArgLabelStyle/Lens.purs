@@ -13,7 +13,7 @@ _Product
    . Lens' (Product a b c d e f g h)
        { arg1 :: a, arg2 :: b, arg3 :: c, arg4 :: d, arg5 :: e, arg6 :: f, arg7 :: g, arg8 :: h }
 _Product = lens
-  ( \Product arg1 arg2 arg3 arg4 arg5 arg6 arg7 arg8 ->
+  ( \(Product arg1 arg2 arg3 arg4 arg5 arg6 arg7 arg8) ->
       { arg1: arg1
       , arg2: arg2
       , arg3: arg3
