@@ -27,6 +27,42 @@ data Data_TyVars_Args2 a b c d = Data_TyVars_Args2 a b
 data Data_TyVars_Args3 :: Type -> Type -> Type -> Type -> Type
 data Data_TyVars_Args3 a b c d = Data_TyVars_Args3 a b c
 
+data Data_NoTyVars_Sum_Args0
+  = Data_NoTyVars_Sum_Args0
+  | Data_NoTyVars_Sum_Args0_Ignored
+
+data Data_NoTyVars_Sum_Args1
+  = Data_NoTyVars_Sum_Args1 Int
+  | Data_NoTyVars_Sum_Args1_Ignored
+
+data Data_NoTyVars_Sum_Args2
+  = Data_NoTyVars_Sum_Args2 Int Int
+  | Data_NoTyVars_Sum_Args2_Ignored
+
+data Data_NoTyVars_Sum_Args3
+  = Data_NoTyVars_Sum_Args3 Int Int Int
+  | Data_NoTyVars_Sum_Args3_Ignored
+
+data Data_TyVars_Sum_Args0 :: Type -> Type -> Type -> Type -> Type
+data Data_TyVars_Sum_Args0 a b c d
+  = Data_TyVars_Sum_Args0
+  | Data_TyVars_Sum_Args0_Ignored
+
+data Data_TyVars_Sum_Args1 :: Type -> Type -> Type -> Type -> Type
+data Data_TyVars_Sum_Args1 a b c d
+  = Data_TyVars_Sum_Args1 a
+  | Data_TyVars_Sum_Args1_Ignored
+
+data Data_TyVars_Sum_Args2 :: Type -> Type -> Type -> Type -> Type
+data Data_TyVars_Sum_Args2 a b c d
+  = Data_TyVars_Sum_Args2 a b
+  | Data_TyVars_Sum_Args2_Ignored
+
+data Data_TyVars_Sum_Args3 :: Type -> Type -> Type -> Type -> Type
+data Data_TyVars_Sum_Args3 a b c d
+  = Data_TyVars_Sum_Args3 a b c
+  | Data_TyVars_Sum_Args3_Ignored
+
 type TypeAlias_Record =
   { foo :: Int
   , bar :: String
