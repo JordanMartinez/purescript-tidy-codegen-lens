@@ -242,7 +242,7 @@ genOptic opt souceFileModName importMap = case _ of
   DTNewtype rec@{ tyName: Name { name: Proper tn } } -> do
     tyLens' <- importFrom "Data.Lens" $ importType "Lens'"
     lensNewtype <- importFrom "Data.Lens.Iso.Newtype" $ importValue "_Newtype"
-    void $ importFrom souceFileModName $ importTypeAll $ unwrap $ unName rec.tyName
+    void $ importFrom souceFileModName $ importType $ unwrap $ unName rec.tyName
     genImportedType importMap rec.wrappedTy
     let
       declIdentifier = "_" <> tn
