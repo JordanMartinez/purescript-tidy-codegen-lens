@@ -32,7 +32,7 @@ See the [snapshots folder](./snapshots) for current output. Files were generated
 ./tidy-mklens \
   --global-record-lens-overwrite-file \
   --global-record-lens-file snapshots/UseGlobalPropFile/GlobalRecordLens.purs \
-  --global-record-lens-module Snapshots.GlobalRecordLens \
+  --global-record-lens-module Snapshots.UseGlobalPropFile.GlobalRecordLens \
   snapshots/UseGlobalPropFile
 ```
 

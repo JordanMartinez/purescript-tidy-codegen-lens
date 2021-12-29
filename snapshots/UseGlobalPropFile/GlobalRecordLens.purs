@@ -1,4 +1,4 @@
-module Snapshots.GlobalRecordLens where
+module Snapshots.UseGlobalPropFile.GlobalRecordLens where
 
 import Data.Lens (Lens')
 import Data.Lens.Record (prop)
