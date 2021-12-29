@@ -10,15 +10,15 @@ This is currently a WIP.
 
 Run `spago build` and then `./tidy-mklens <CLI args>`
 
-Read the table below and then look at the [snapshots folder](./snapshots) for current output.
+The table below summarizes the current output stored in the [snapshots folder](./snapshots).
 
-| Purpose | Source Files | Outputted Files |
-| - | - | - |
-| Show the 'arg' label style | <ul><li>[UseArgLabelStyle.purs](./snapshots/UseArgLabelStyle.purs)</li></ul> | <ul><li>[UseArgLabelStyle/Lens.purs](./snapshots/UseArgLabelStyle/Lens.purs)</li></ul> |
-| Show the 'abc' label style | <ul><li>[UseAbcLabelStyle.purs](./snapshots/UseAbcLabelStyle.purs)</li></ul> | <ul><li>[UseAbcLabelStyle/Lens.purs](./snapshots/UseAbcLabelStyle/Lens.purs)</li></ul> |
-| Show the `--gen-type-alias-lenses` option | <ul><li>[UseTypeAlises.purs](./snapshots/UseTypeAlises.purs)</li></ul> | <ul><li>[UseTypeAlises/Lens.purs](./snapshots/UseTypeAlises/Lens.purs)</li></ul> |
-| Primary example; Show why the `--gen-record-lens-*` options exist | <ul><li>[UseLocalProps/Module1.purs](./snapshots/UseLocalProps/Module1.purs)</li><li>[UseLocalProps/Module2.purs](./snapshots/UseLocalProps/Module2.purs)</li></ul> | <ul><li>[UseLocalProps/Module1/Lens.purs](./snapshots/UseLocalProps/Module1/Lens.purs)</li><li>[UseLocalProps/Module2/Lens.purs](./snapshots/UseLocalProps/Module2/Lens.purs)</li></ul> |
-| Primary example; demo the `--gen-record-lens-*` options | <ul><li>[UseGlobalPropFile/Module1.purs](./snapshots/UseGlobalPropFile/Module1.purs)</li><li>[UseGlobalPropFile/Module2.purs](./snapshots/UseGlobalPropFile/Module2.purs)</li></ul> | <ul><li>[UseGlobalPropFile/Module1/Lens.purs](./snapshots/UseGlobalPropFile/Module1/Lens.purs)</li><li>[UseGlobalPropFile/Module2/Lens.purs](./snapshots/UseLocalProps/Module2/Lens.purs)</li><li>[UseGlobalPropFile/GlobalRecordLens.purs](./snapshots/UseGlobalPropFile/GlobalRecordLens.purs)</li></ul> |
+| Purpose | Files |
+| - | - |
+| Show the 'arg' label style | <ul><li><p>Source file</p><ul><li>[UseArgLabelStyle.purs](./snapshots/UseArgLabelStyle.purs)</li></ul></li><li><p>Output file(s)</p><ul><li>[UseArgLabelStyle/Lens.purs](./snapshots/UseArgLabelStyle/Lens.purs)</li></ul></li></ul> |
+| Show the 'abc' label style | <ul><li><p>Source file</p><ul><li>[UseAbcLabelStyle.purs](./snapshots/UseAbcLabelStyle.purs)</li></ul></li><li><p>Output file(s)</p><ul><li>[UseAbcLabelStyle/Lens.purs](./snapshots/UseAbcLabelStyle/Lens.purs)</li></ul></li></ul> |
+| Show the `--gen-type-alias-lenses` option | <ul><li><p>Source file</p><ul><li>[UseTypeAlises.purs](./snapshots/UseTypeAlises.purs)</li></ul></li><li><p>Output file(s)</p><ul><li>[UseTypeAlises/Lens.purs](./snapshots/UseTypeAlises/Lens.purs)</li></ul></li></ul> |
+| Primary example<br /><br />Show why the `--gen-record-lens-*` options exist | <ul><li><p>Source file</p><ul><li>[UseLocalProps/Module1.purs](./snapshots/UseLocalProps/Module1.purs)</li><li>[UseLocalProps/Module2.purs](./snapshots/UseLocalProps/Module2.purs)</li></ul></li><li><p>Output file(s)</p><ul><li>[UseLocalProps/Module1/Lens.purs](./snapshots/UseLocalProps/Module1/Lens.purs)</li><li>[UseLocalProps/Module2/Lens.purs](./snapshots/UseLocalProps/Module2/Lens.purs)</li></ul></li></ul> |
+| Primary example<br /><br />Demo the `--gen-record-lens-*` options | <ul><li><p>Source file</p><ul><li>[UseGlobalPropFile/Module1.purs](./snapshots/UseGlobalPropFile/Module1.purs)</li><li>[UseGlobalPropFile/Module2.purs](./snapshots/UseGlobalPropFile/Module2.purs)</li></ul></li><li><p>Output file(s)</p><ul><li>[UseGlobalPropFile/Module1/Lens.purs](./snapshots/UseGlobalPropFile/Module1/Lens.purs)</li><li>[UseGlobalPropFile/Module2/Lens.purs](./snapshots/UseGlobalPropFile/Module2/Lens.purs)</li><li>[UseGlobalPropFile/GlobalRecordLens.purs](./snapshots/UseGlobalPropFile/GlobalRecordLens.purs)</li></ul></li></ul> |
 
 Files were generated using the below commands, which are stored in [regen-snapshots.sh](./regen-snapshots.sh):
 
