@@ -1,5 +1,7 @@
 module Snapshots.PrimaryExample where
 
+import Prelude
+
 import Snapshots.Imports.ImportedExplicitTypesNoModuleAlias (MyAlias, MyData, MyNewtype)
 import Snapshots.Imports.ImportedExplicitTypesWithModuleAlias (MyData, MyNewtype, MyAlias) as Shared
 import Snapshots.Imports.ModuleAliasOnly as Q
@@ -87,3 +89,6 @@ newtype Record_ImportedTypesAreReimported = Record_ImportedTypesAreReimported
 data EnsureSharedImportIsUsed =
   EnsureSharedImportIsUsed
     (Shared.SharedMyData Int Int Int) (Shared.SharedMyAlias String) (Shared.SharedMyNewtype Int Int Int)
+
+usePrelude :: String
+usePrelude = show 1

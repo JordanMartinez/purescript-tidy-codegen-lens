@@ -33,7 +33,7 @@ import PureScript.CST.Traversal (defaultMonoidalVisitor, foldMapModule)
 import PureScript.CST.Types (DataCtor(..), Declaration(..), FixityOp(..), Foreign(..), Import(..), ImportDecl(..), Label(..), Labeled(..), Module(..), ModuleBody(..), ModuleHeader(..), ModuleName(..), Name(..), Operator, Proper(..), QualifiedName(..), Row(..), Separated(..), Type(..), TypeVarBinding(..), Wrapped(..))
 import Safe.Coerce (coerce)
 import Tidy.Codegen (binderCtor, binderRecord, binderVar, caseBranch, declSignature, declValue, exprApp, exprCase, exprCtor, exprIdent, exprLambda, exprRecord, exprSection, exprTyped, printModule, typeApp, typeCtor, typeForall, typeRecord, typeString, typeVar)
-import Tidy.Codegen.Monad (Codegen, importCtor, importFrom, importType, importTypeOp, importValue, runCodegenTModule)
+import Tidy.Codegen.Monad (Codegen, importCtor, importFrom, importOpen, importType, importTypeOp, importValue, runCodegenTModule)
 import Types (RecordLabelStyle(..))
 
 type GenOptions =
@@ -87,6 +87,7 @@ generateLensModule options filePath = do
       let
         modulePath = (getModulePath cst) <> ".Lens"
         Tuple labelNames generatedModule = runFree coerce $ unsafePartial $ runCodegenTModule modulePath do
+          importOpenImports cst
           labelNames <- traverse (genOptic options (getImportedTypes cst)) $ extractDecls cst
           let labelNameSet = foldl Set.union Set.empty labelNames
           unless (isJust options.genGlobalPropFile) do
@@ -105,6 +106,14 @@ generateLensModule options filePath = do
         "Parsing module for file path failed. Could not generate lens file for path: '" <> filePath <> "'"
   where
   getModulePath (Module { header: ModuleHeader { name: Name { name: ModuleName mn } } }) = mn
+
+  importOpenImports :: Module Void -> Codegen Void Unit
+  importOpenImports (Module { header: ModuleHeader { imports }}) =
+    for_ imports case _ of
+      ImportDecl r@{ names: Nothing, qualified: Nothing } -> do
+        importOpen $ unName r.module
+      _ ->
+        pure unit
 
   getImportedTypes :: Module Void -> ImportedTypes
   getImportedTypes
