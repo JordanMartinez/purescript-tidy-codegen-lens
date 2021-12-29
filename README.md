@@ -10,7 +10,33 @@ This is currently a WIP.
 
 Run `spago build` and then `./tidy-mklens <CLI args>`
 
-The table below summarizes the current output stored in the [snapshots folder](./snapshots).
+```
+$ ./tidy-mklens --help
+tidy-mklens
+    A CLI for generating optics for your data types
+    
+    Expected usage: 
+      tidy-mklens [OPTIONS] PURS_GLOBS...
+    
+    Examples:
+      tidy-mklens src
+      tidy-mklens -w -p src/RecordLens.purs -m RecordLens src
+      tidy-mklens --label-style-abc src
+      tidy-mklens --gen-type-alias-lenses src
+
+    --gen-type-alias-lenses,-t                    Generate lenses for type aliases
+    --global-record-lens-file,-p FILE_PATH        Output record label lenses to this single file rather than in each module's file (e.g. `src/RecordLens.purs`)
+    --global-record-lens-module,-m MODULE_PATH    The full module path to use for the single record label lenses file (e.g `Foo.Bar.Lens`)
+    --global-record-lens-overwrite-file,-w        Overwrite the single file if it already exists
+    --help,-h                                     Show this help message.
+    --label-style-abc,-b                          Data constructors with 3+ args will use record labels based on the alphabet (e.g. 'a', 'b', ..., 'z', 'aa', 'ab', ...)
+    --label-style-arg,-a                          Data constructors with 3+ args will use record labels of 'argN' (e.g. 'arg1', 'arg2', ..., 'argN')
+    --version,-v                                  Shows the current version
+    
+    PURS_GLOBS                                    Globs for PureScript sources.
+```
+
+The table illustrates some of the CLI args above via the current output on the files stored in the [snapshots folder](./snapshots).
 
 | Purpose | Files |
 | - | - |
