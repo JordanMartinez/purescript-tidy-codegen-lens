@@ -18,63 +18,63 @@ import Types (RecordLabelStyle(..))
 
 type CliArgs =
   {
-  -- | Some type alises refer to records
-  -- | ```
-  -- | type Foo = { a :: Int }
-  -- | ```
-  -- | So, a lens is generated for the `a` label.
-  -- |
-  -- | Other type aliases refer to non record types
-  -- | ```
-  -- | type Foo = Wrapped (Label (Name Proper) (Type Void))
-  -- | ```
-  -- | It can be hard to know what `Foo` refers to. So
-  -- | rather than remembering to write `_Wrapped` when one
-  -- | comes across a `Foo`, one can write `_Foo`, ask the compiler
-  -- | for help via typed holes, and then be directed by the compiler
-  -- | to use `_Wrapped`.
-  -- | The intermediary `_Foo` can be removed once
-  -- | one becomes more familiar with a libary's type aliases.
-  genTypeAliasLens :: Boolean
+    -- | Some type alises refer to records
+    -- | ```
+    -- | type Foo = { a :: Int }
+    -- | ```
+    -- | So, a lens is generated for the `a` label.
+    -- |
+    -- | Other type aliases refer to non record types
+    -- | ```
+    -- | type Foo = Wrapped (Label (Name Proper) (Type Void))
+    -- | ```
+    -- | It can be hard to know what `Foo` refers to. So
+    -- | rather than remembering to write `_Wrapped` when one
+    -- | comes across a `Foo`, one can write `_Foo`, ask the compiler
+    -- | for help via typed holes, and then be directed by the compiler
+    -- | to use `_Wrapped`.
+    -- | The intermediary `_Foo` can be removed once
+    -- | one becomes more familiar with a libary's type aliases.
+    genTypeAliasLens :: Boolean
   ,
-  -- | Multiple types may refer to the same label name
-  -- | across multiple files...
-  -- | ```
-  -- | // Foo.purs
-  -- | type Foo = { val :: Int }
-  -- | type Bar = { val :: String }
-  -- | // Baz.purs
-  -- | type Baz = { val :: Char }
-  -- | ```
-  -- | By default, each module's `Lens.purs` file
-  -- | will include a lens for each label referenced
-  -- | in that file. However, this can lead to
-  -- | importing lenses from different modules
-  -- | that do the same thing:
-  -- | ```
-  -- | import Foo (_propA)
-  -- | import Baz (_propA)
-  -- |
-  -- | // where `_propA` is
-  -- | _propVal :: forall a r. Lens' { val :: a | r } a
-  -- | _propVal :: prop (Proxy :: Proxy "val")
-  -- | ```
-  -- |
-  -- | Enabling this feature means a single `RecordLens.purs`
-  -- | file will be generated where each label's lens
-  -- | is generated only once.
-  genGlobalPropFile :: Maybe { filePath :: FilePath, moduleName :: String, overwrite :: Boolean }
+    -- | Multiple types may refer to the same label name
+    -- | across multiple files...
+    -- | ```
+    -- | // Foo.purs
+    -- | type Foo = { val :: Int }
+    -- | type Bar = { val :: String }
+    -- | // Baz.purs
+    -- | type Baz = { val :: Char }
+    -- | ```
+    -- | By default, each module's `Lens.purs` file
+    -- | will include a lens for each label referenced
+    -- | in that file. However, this can lead to
+    -- | importing lenses from different modules
+    -- | that do the same thing:
+    -- | ```
+    -- | import Foo (_propA)
+    -- | import Baz (_propA)
+    -- |
+    -- | // where `_propA` is
+    -- | _propVal :: forall a r. Lens' { val :: a | r } a
+    -- | _propVal :: prop (Proxy :: Proxy "val")
+    -- | ```
+    -- |
+    -- | Enabling this feature means a single `RecordLens.purs`
+    -- | file will be generated where each label's lens
+    -- | is generated only once.
+    genGlobalPropFile :: Maybe { filePath :: FilePath, moduleName :: String, overwrite :: Boolean }
 
   ,
-  -- | When there are data constructors with 3+ arguments
-  -- | we could convert the value into a nested `Tuple`
-  -- | but that seems less user-friendly than just using
-  -- | a record.
-  -- | However, what should the record's labels be?
-  -- | We can use two styles:
-  -- | - `AlphabetRecordLabels`: `Foo a b c d -> { a, b, c, d }`
-  -- | - `ArgRecordLabels`: `Foo a b c d -> { arg1: a, arg2: b, arg3: c, arg4: d }`
-  recordLabelStyle :: RecordLabelStyle
+    -- | When there are data constructors with 3+ arguments
+    -- | we could convert the value into a nested `Tuple`
+    -- | but that seems less user-friendly than just using
+    -- | a record.
+    -- | However, what should the record's labels be?
+    -- | We can use two styles:
+    -- | - `AlphabetRecordLabels`: `Foo a b c d -> { a, b, c, d }`
+    -- | - `ArgRecordLabels`: `Foo a b c d -> { arg1: a, arg2: b, arg3: c, arg4: d }`
+    recordLabelStyle :: RecordLabelStyle
   , pursGlobs :: Array String
   }
 
@@ -85,29 +85,30 @@ parseCliArgs :: Array String -> Either ArgError CliArgs
 parseCliArgs =
   parseArgs
     "tidy-mklens"
-    (joinWith "\n"
-      [ "A CLI for generating optics for your data types"
-      , ""
-      , "Expected usage: "
-      , "  tidy-mklens [OPTIONS] PURS_GLOBS..."
-      , ""
-      , "Examples:"
-      , "  tidy-mklens src"
-      , "  tidy-mklens -w -p src/RecordLens.purs -m RecordLens src"
-      , "  tidy-mklens --label-style-abc src"
-      , "  tidy-mklens --gen-type-alias-lenses src"
-      ]
+    ( joinWith "\n"
+        [ "A CLI for generating optics for your data types"
+        , ""
+        , "Expected usage: "
+        , "  tidy-mklens [OPTIONS] PURS_GLOBS..."
+        , ""
+        , "Examples:"
+        , "  tidy-mklens src"
+        , "  tidy-mklens -w -p src/RecordLens.purs -m RecordLens src"
+        , "  tidy-mklens --label-style-abc src"
+        , "  tidy-mklens --gen-type-alias-lenses src"
+        ]
     )
     parser
   where
-  parser = fromRecord
-    { genTypeAliasLens
-    , genGlobalPropFile
-    , recordLabelStyle
-    , pursGlobs
-    }
-    <* flagInfo [ "--version", "-v" ] "Shows the current version" versionStr
-    <* flagHelp
+  parser =
+    fromRecord
+      { genTypeAliasLens
+      , genGlobalPropFile
+      , recordLabelStyle
+      , pursGlobs
+      }
+      <* flagInfo [ "--version", "-v" ] "Shows the current version" versionStr
+      <* flagHelp
 
   genTypeAliasLens =
     flag
@@ -115,19 +116,19 @@ parseCliArgs =
       "Generate lenses for type aliases"
       # boolean
   genGlobalPropFile =
-    optional (
-      fromRecord
-        { filePath:
-            argument [ "--global-record-lens-file", "-p" ] "Output record label lenses to this single file rather than in each module's file (e.g. `src/RecordLens.purs`)"
-              # unformat "FILE_PATH" validateFilePath
-        , moduleName:
-            argument [ "--global-record-lens-module", "-m" ] "The full module path to use for the single record label lenses file (e.g `Foo.Bar.Lens`)"
-              # unformat "MODULE_PATH" validateModulePath
-        , overwrite:
-            flag [ "--global-record-lens-overwrite-file", "-w" ] "Overwrite the single file if it already exists"
-              # boolean
-        }
-    )
+    optional
+      ( fromRecord
+          { filePath:
+              argument [ "--global-record-lens-file", "-p" ] "Output record label lenses to this single file rather than in each module's file (e.g. `src/RecordLens.purs`)"
+                # unformat "FILE_PATH" validateFilePath
+          , moduleName:
+              argument [ "--global-record-lens-module", "-m" ] "The full module path to use for the single record label lenses file (e.g `Foo.Bar.Lens`)"
+                # unformat "MODULE_PATH" validateModulePath
+          , overwrite:
+              flag [ "--global-record-lens-overwrite-file", "-w" ] "Overwrite the single file if it already exists"
+                # boolean
+          }
+      )
     where
     validateFilePath s = do
       when (s == "") do
@@ -168,7 +169,7 @@ parseCliArgs =
       , AlphabetRecordLabels <$ flag [ "--label-style-abc", "-b" ]
           "Data constructors with 3+ args will use record labels based on the alphabet (e.g. 'a', 'b', ..., 'z', 'aa', 'ab', ...)"
       ]
-    # default ArgRecordLabels
+      # default ArgRecordLabels
   pursGlobs =
     anyNotFlag "PURS_GLOBS" "Globs for PureScript sources."
       # unfolded1

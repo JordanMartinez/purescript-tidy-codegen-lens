@@ -98,20 +98,20 @@ generateLensModule options filePath = do
           parentDir = Path.concat [ dirname filePath, basenameWithoutExt filePath (extname filePath) ]
         unlessM (FSA.exists parentDir) do
           FSA.mkdir parentDir
-        FSA.writeTextFile UTF8 (Path.concat [ parentDir, "Lens.purs"]) outputtedContent
+        FSA.writeTextFile UTF8 (Path.concat [ parentDir, "Lens.purs" ]) outputtedContent
       pure labelNames
     _ ->
       liftEffect $ throw $
         "Parsing module for file path failed. Could not generate lens file for path: '" <> filePath <> "'"
   where
-  getModulePath (Module { header: ModuleHeader { name: Name { name: ModuleName mn }}}) = mn
+  getModulePath (Module { header: ModuleHeader { name: Name { name: ModuleName mn } } }) = mn
 
   getImportedTypes :: Module Void -> ImportedTypes
   getImportedTypes
-    (Module
-      { header: ModuleHeader { imports, name: Name { name: sourceFileModName } }
-      , body: ModuleBody { decls }
-      }
+    ( Module
+        { header: ModuleHeader { imports, name: Name { name: sourceFileModName } }
+        , body: ModuleBody { decls }
+        }
     ) = foldl insertTypesDefinedInSourceFile typesImportedBySourceFile decls
     where
     typesImportedBySourceFile = foldl insertImportedTypes Map.empty imports
@@ -119,15 +119,15 @@ generateLensModule options filePath = do
     insertTypesDefinedInSourceFile :: ImportedTypes -> Declaration Void -> ImportedTypes
     insertTypesDefinedInSourceFile acc = case _ of
       DeclData { name } _ -> do
-        Map.insert (TypeName (Just sourceFileModName) (unName name )) sourceFileModName acc
+        Map.insert (TypeName (Just sourceFileModName) (unName name)) sourceFileModName acc
       DeclNewtype { name } _ _ _ -> do
-        Map.insert (TypeName (Just sourceFileModName) (unName name )) sourceFileModName acc
+        Map.insert (TypeName (Just sourceFileModName) (unName name)) sourceFileModName acc
       DeclType { name } _ _ -> do
-        Map.insert (TypeName (Just sourceFileModName) (unName name )) sourceFileModName acc
+        Map.insert (TypeName (Just sourceFileModName) (unName name)) sourceFileModName acc
       DeclForeign _ _ (ForeignData _ (Labeled { label })) -> do
-        Map.insert (TypeName (Just sourceFileModName) (unName label )) sourceFileModName acc
+        Map.insert (TypeName (Just sourceFileModName) (unName label)) sourceFileModName acc
       DeclFixity { operator: FixityType _ _ _ opName } -> do
-        Map.insert (TypeOperator (Just sourceFileModName) (unName opName )) sourceFileModName acc
+        Map.insert (TypeOperator (Just sourceFileModName) (unName opName)) sourceFileModName acc
       _ ->
         acc
 
@@ -154,10 +154,10 @@ generateLensModule options filePath = do
             ImportTypeOp _ opName -> Map.insert (TypeOperator possibleModAlias (unName opName)) (unName r.module) accum
             _ -> acc
 
-    extractNames = snd >>> \(Wrapped { value: Separated { head, tail }}) -> Array.cons head $ map snd tail
+    extractNames = snd >>> \(Wrapped { value: Separated { head, tail } }) -> Array.cons head $ map snd tail
 
 hasDecls :: Module Void -> Boolean
-hasDecls (Module { body: ModuleBody { decls }}) = not $ Array.null decls
+hasDecls (Module { body: ModuleBody { decls } }) = not $ Array.null decls
 
 data DeclType
   = DTNewtype
@@ -185,7 +185,7 @@ extractDecls cst = foldMapModule visitor cst
           Array.singleton $ DTData { tyName: name, tyVars: vars, constructors: Array.cons head $ map snd tail }
         DeclNewtype ({ name, vars }) _ _ ty -> do
           Array.singleton $ DTNewtype { tyName: name, tyVars: vars, wrappedTy: ty }
-        DeclType ({ name, vars}) _ ty -> do
+        DeclType ({ name, vars }) _ ty -> do
           Array.singleton $ DTType { tyName: name, tyVars: vars, aliasedTy: ty }
         _ -> mempty
     }
@@ -204,14 +204,14 @@ genOptic opt importMap = case _ of
       pure Set.empty
 
     [ DataCtor { name: ctorName@(Name { name: Proper ctorNameStr }), fields } ] -> do
-        genLensProduct opt importMap rec.tyName ctorName rec.tyVars ctorNameStr fields
+      genLensProduct opt importMap rec.tyName ctorName rec.tyVars ctorNameStr fields
 
     _ -> do
       sets <- for rec.constructors \(DataCtor { name: ctorName@(Name { name: Proper ctorNameStr }), fields }) ->
         genPrismSum opt importMap rec.tyName ctorName rec.tyVars ctorNameStr fields
       pure $ foldl Set.union Set.empty sets
 
-  DTNewtype rec@{ tyName: Name { name: Proper tn }} -> do
+  DTNewtype rec@{ tyName: Name { name: Proper tn } } -> do
     tyLens' <- importFrom "Data.Lens" $ importType "Lens'"
     lensNewtype <- importFrom "Data.Lens.Iso.Newtype" $ importValue "_Newtype"
     genImportedType importMap rec.wrappedTy
@@ -227,7 +227,7 @@ genOptic opt importMap = case _ of
       , declValue declIdentifier [] (exprIdent lensNewtype)
       ]
     case rec.wrappedTy of
-      TypeRecord (Wrapped { value: Row { labels: Just (Separated { head, tail })}}) -> do
+      TypeRecord (Wrapped { value: Row { labels: Just (Separated { head, tail }) } }) -> do
         pure $ foldl (\acc next -> Set.insert (unLabel $ snd next) acc) (Set.singleton $ unLabel head) tail
       _ ->
         pure Set.empty
@@ -249,7 +249,7 @@ genOptic opt importMap = case _ of
         , declValue declIdentifier [] (exprIdent identity_)
         ]
     case aliasedTy of
-      TypeRecord (Wrapped { value: Row { labels: Just (Separated { head, tail })}}) -> do
+      TypeRecord (Wrapped { value: Row { labels: Just (Separated { head, tail }) } }) -> do
         pure $ foldl (\acc next -> Set.insert (unLabel $ snd next) acc) (Set.singleton $ unLabel head) tail
       _ ->
         pure Set.empty
@@ -263,7 +263,7 @@ unName (Name { name }) = name
 tyVarToTypeVar :: TypeVarBinding Void -> Type Void
 tyVarToTypeVar = case _ of
   TypeVarName n -> typeVar n
-  TypeVarKinded (Wrapped { value: Labeled { label: n }}) -> typeVar n
+  TypeVarKinded (Wrapped { value: Labeled { label: n } }) -> typeVar n
 
 genImportedType
   :: Partial
@@ -314,7 +314,7 @@ genImportedType importMap = go
 
   goTyVars = traverse_ case _ of
     TypeVarName _ -> pure unit
-    TypeVarKinded (Wrapped { value: Labeled { value }}) -> go value
+    TypeVarKinded (Wrapped { value: Labeled { value } }) -> go value
 
   importTypeOperator (QualifiedName r) = do
     let
@@ -387,7 +387,7 @@ genLensProduct opt importMap tyName ctorName tyVars ctorNameStr fields = do
                 ]
         , declValue declIdentifier [] do
             exprApp (exprIdent lens)
-              [ exprLambda [ binderCtor ctorName [ binderVar "a"] ] (exprIdent "a")
+              [ exprLambda [ binderCtor ctorName [ binderVar "a" ] ] (exprIdent "a")
               , exprCtor ctorName
               ]
         ]
@@ -400,9 +400,9 @@ genLensProduct opt importMap tyName ctorName tyVars ctorNameStr fields = do
     --    _Foo = lens' (\(Foo a b) -> Tuple a b) (\(Tuple a b) -> Foo a b)
     [ ty1, ty2 ] -> do
       tupleRec <- importFrom "Data.Tuple"
-          { ty: importType "Tuple"
-          , ctor: importCtor "Tuple" "Tuple"
-          }
+        { ty: importType "Tuple"
+        , ctor: importCtor "Tuple" "Tuple"
+        }
       tell
         [ declSignature declIdentifier
             $ typeForall tyVars
@@ -412,9 +412,9 @@ genLensProduct opt importMap tyName ctorName tyVars ctorNameStr fields = do
                 ]
         , declValue declIdentifier [] do
             exprApp (exprIdent lens)
-              [ exprLambda [ binderCtor ctorName [ binderVar "a", binderVar "b"] ]
+              [ exprLambda [ binderCtor ctorName [ binderVar "a", binderVar "b" ] ]
                   (exprApp (exprCtor tupleRec.ctor) [ exprIdent "a", exprIdent "b" ])
-              , exprLambda [ binderCtor tupleRec.ctor [ binderVar "a", binderVar "b"] ]
+              , exprLambda [ binderCtor tupleRec.ctor [ binderVar "a", binderVar "b" ] ]
                   (exprApp (exprCtor ctorName) [ exprIdent "a", exprIdent "b" ])
               ]
         ]
@@ -443,7 +443,7 @@ genLensProduct opt importMap tyName ctorName tyVars ctorNameStr fields = do
         , declValue declIdentifier [] do
             exprApp (exprIdent lens)
               [ exprLambda [ binderCtor ctorName $ map binderVar varNames ]
-                  (exprRecord $ map (\var -> Tuple var (exprIdent var)) varNames )
+                  (exprRecord $ map (\var -> Tuple var (exprIdent var)) varNames)
               , exprLambda [ binderRecord varNames ]
                   (exprApp (exprCtor ctorName) $ map exprIdent varNames)
               ]
@@ -498,11 +498,11 @@ genPrismSum opt importMap tyName ctorName tyVars ctorNameStr fields = do
             exprApp (exprIdent prismFn)
               [ exprApp (exprIdent prelude.const_) [ exprCtor ctorName ]
               , exprCase [ exprSection ]
-                [ caseBranch [ binderCtor ctorName [] ]
-                    (exprApp (exprCtor eitherRec.rightCtor) [ exprIdent prelude.unit_ ])
-                , caseBranch [ binderVar "other" ]
-                    (exprApp (exprCtor eitherRec.leftCtor) [ exprIdent "other" ])
-                ]
+                  [ caseBranch [ binderCtor ctorName [] ]
+                      (exprApp (exprCtor eitherRec.rightCtor) [ exprIdent prelude.unit_ ])
+                  , caseBranch [ binderVar "other" ]
+                      (exprApp (exprCtor eitherRec.leftCtor) [ exprIdent "other" ])
+                  ]
               ]
         ]
       pure Set.empty
@@ -527,11 +527,11 @@ genPrismSum opt importMap tyName ctorName tyVars ctorNameStr fields = do
             exprApp (exprIdent prismFn)
               [ exprCtor ctorName
               , exprCase [ exprSection ]
-                [ caseBranch [ binderCtor ctorName [ binderVar "a" ] ]
-                    (exprApp (exprCtor eitherRec.rightCtor) [ exprIdent "a" ])
-                , caseBranch [ binderVar "other" ]
-                    (exprApp (exprCtor eitherRec.leftCtor) [ exprIdent "other" ])
-                ]
+                  [ caseBranch [ binderCtor ctorName [ binderVar "a" ] ]
+                      (exprApp (exprCtor eitherRec.rightCtor) [ exprIdent "a" ])
+                  , caseBranch [ binderVar "other" ]
+                      (exprApp (exprCtor eitherRec.leftCtor) [ exprIdent "other" ])
+                  ]
               ]
         ]
       pure Set.empty
@@ -547,9 +547,9 @@ genPrismSum opt importMap tyName ctorName tyVars ctorNameStr fields = do
     --      x -> Left x
     [ ty1, ty2 ] -> do
       tupleRec <- importFrom "Data.Tuple"
-          { ty: importType "Tuple"
-          , ctor: importCtor "Tuple" "Tuple"
-          }
+        { ty: importType "Tuple"
+        , ctor: importCtor "Tuple" "Tuple"
+        }
       tell
         [ declSignature declIdentifier
             $ typeForall tyVars
@@ -562,11 +562,11 @@ genPrismSum opt importMap tyName ctorName tyVars ctorNameStr fields = do
               [ exprLambda [ binderCtor tupleRec.ctor [ binderVar "a", binderVar "b" ] ]
                   (exprApp (exprCtor ctorName) [ exprIdent "a", exprIdent "b" ])
               , exprCase [ exprSection ]
-                [ caseBranch [ binderCtor ctorName [ binderVar "a", binderVar "b" ] ]
-                    (exprApp (exprCtor eitherRec.rightCtor) [ exprIdent "a", exprIdent "b" ])
-                , caseBranch [ binderVar "other" ]
-                    (exprApp (exprCtor eitherRec.leftCtor) [ exprIdent "other"])
-                ]
+                  [ caseBranch [ binderCtor ctorName [ binderVar "a", binderVar "b" ] ]
+                      (exprApp (exprCtor eitherRec.rightCtor) [ exprIdent "a", exprIdent "b" ])
+                  , caseBranch [ binderVar "other" ]
+                      (exprApp (exprCtor eitherRec.leftCtor) [ exprIdent "other" ])
+                  ]
               ]
         ]
       pure Set.empty
@@ -601,12 +601,13 @@ genPrismSum opt importMap tyName ctorName tyVars ctorNameStr fields = do
               [ exprLambda [ binderRecord varNames ]
                   (exprApp (exprCtor ctorName) $ map exprIdent varNames)
               , exprCase [ exprSection ]
-                [ caseBranch [ binderCtor ctorName $ map binderVar varNames ]
-                    (exprApp (exprCtor eitherRec.rightCtor)
-                      [ exprRecord $ map (\var -> Tuple var (exprIdent var)) varNames ])
-                , caseBranch [ binderVar "other" ]
-                    (exprApp (exprCtor eitherRec.leftCtor) [ exprIdent "other"])
-                ]
+                  [ caseBranch [ binderCtor ctorName $ map binderVar varNames ]
+                      ( exprApp (exprCtor eitherRec.rightCtor)
+                          [ exprRecord $ map (\var -> Tuple var (exprIdent var)) varNames ]
+                      )
+                  , caseBranch [ binderVar "other" ]
+                      (exprApp (exprCtor eitherRec.leftCtor) [ exprIdent "other" ])
+                  ]
               ]
         ]
       pure $ Set.fromFoldable varNames
@@ -692,19 +693,20 @@ fieldLabels fields = case _ of
       (maybe "" (\i -> charCodeToString (charCodeA + i)) prefix) <> charCodeToString nextLabel
 
     foldlFn
-      :: ({ nextLabel :: Int
-          , prefix :: Maybe Int
-          , init :: Boolean
-          , recordTy :: Array (Tuple String (Type Void))
-          , varNames :: Array String
-          }
-      -> Type Void
-      -> { nextLabel :: Int
-          , prefix :: Maybe Int
-          , init :: Boolean
-          , recordTy :: Array (Tuple String (Type Void))
-          , varNames :: Array String
-          })
+      :: ( { nextLabel :: Int
+           , prefix :: Maybe Int
+           , init :: Boolean
+           , recordTy :: Array (Tuple String (Type Void))
+           , varNames :: Array String
+           }
+           -> Type Void
+           -> { nextLabel :: Int
+              , prefix :: Maybe Int
+              , init :: Boolean
+              , recordTy :: Array (Tuple String (Type Void))
+              , varNames :: Array String
+              }
+         )
       -> { recordTy :: Array (Tuple String (Type Void)), varNames :: Array String }
     foldlFn f = do
       let { recordTy, varNames } = foldl f initial fields
