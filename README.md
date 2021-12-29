@@ -10,7 +10,7 @@ This is currently a WIP.
 
 Run `spago build` and then `./tidy-mklens <CLI args>`
 
-See the [snapshots folder](./snapshots) for current output. Files were generated using the below commands:
+See the [snapshots folder](./snapshots) for current output. Files were generated using the below commands, which are stored in [regen-snapshots.sh](./regen-snapshots.sh):
 
 ```bash
 # Note: the `arg` style is the default
@@ -35,7 +35,3 @@ See the [snapshots folder](./snapshots) for current output. Files were generated
   --global-record-lens-module Snapshots.UseGlobalPropFile.GlobalRecordLens \
   snapshots/UseGlobalPropFile
 ```
-
-## Roadmap
-
-- update generated files to import non-Prim types based on the types imported in original file
