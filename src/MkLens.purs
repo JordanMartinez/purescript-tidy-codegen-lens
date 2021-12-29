@@ -3,18 +3,22 @@ module MkLens where
 import Prelude
 import Prim hiding (Type, Row)
 
+import Control.Alt ((<|>))
 import Control.Monad.Free (runFree)
 import Control.Monad.Writer (tell)
 import Data.Array (mapWithIndex)
 import Data.Array as Array
 import Data.Char (fromCharCode, toCharCode)
 import Data.Identity (Identity(..))
+import Data.Map (Map)
+import Data.Map as Map
 import Data.Maybe (Maybe(..), fromJust, isJust, maybe)
+import Data.Newtype (unwrap)
 import Data.Set (Set)
 import Data.Set as Set
 import Data.String (splitAt, toUpper)
 import Data.String.CodeUnits as String
-import Data.Traversable (foldl, for, for_, traverse)
+import Data.Traversable (foldl, for, for_, traverse, traverse_)
 import Data.Tuple (Tuple(..), snd)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
@@ -26,10 +30,10 @@ import Node.Path as Path
 import Partial.Unsafe (unsafePartial)
 import PureScript.CST (RecoveredParserResult(..), parseModule)
 import PureScript.CST.Traversal (defaultMonoidalVisitor, foldMapModule)
-import PureScript.CST.Types (DataCtor(..), Declaration(..), Label(..), Labeled(..), Module(..), ModuleBody(..), ModuleHeader(..), ModuleName(..), Name(..), Proper(..), Row(..), Separated(..), Type(..), TypeVarBinding(..), Wrapped(..))
+import PureScript.CST.Types (DataCtor(..), Declaration(..), FixityOp(..), Foreign(..), Import(..), ImportDecl(..), Label(..), Labeled(..), Module(..), ModuleBody(..), ModuleHeader(..), ModuleName(..), Name(..), Operator, Proper(..), QualifiedName(..), Row(..), Separated(..), Type(..), TypeVarBinding(..), Wrapped(..))
 import Safe.Coerce (coerce)
 import Tidy.Codegen (binderCtor, binderRecord, binderVar, caseBranch, declSignature, declValue, exprApp, exprCase, exprCtor, exprIdent, exprLambda, exprRecord, exprSection, exprTyped, printModule, typeApp, typeCtor, typeForall, typeRecord, typeString, typeVar)
-import Tidy.Codegen.Monad (Codegen, importCtor, importFrom, importType, importValue, runCodegenTModule)
+import Tidy.Codegen.Monad (Codegen, importCtor, importFrom, importType, importTypeOp, importValue, runCodegenTModule)
 import Types (RecordLabelStyle(..))
 
 type GenOptions =
@@ -37,6 +41,39 @@ type GenOptions =
   , genGlobalPropFile :: Maybe { filePath :: FilePath, moduleName :: String, overwrite :: Boolean }
   , recordLabelStyle :: RecordLabelStyle
   }
+
+data ImportedTypeKey
+  = ModuleAlias ModuleName
+  | TypeName (Maybe ModuleName) Proper
+  | TypeOperator (Maybe ModuleName) Operator
+
+derive instance eqImportedTypeKey :: Eq ImportedTypeKey
+derive instance ordImportedTypeKey :: Ord ImportedTypeKey
+
+-- | Given a source file of...
+-- | ```
+-- | import Mod1 as Q
+-- | import Mod2 (MyType1, type (+++)) as Q
+-- | import Mod3 (MyType2, type (***))
+-- |
+-- | a = {} :: Q.Type
+-- | b = {} :: Int Q./\ Int
+-- | c = {} :: Q.MyType1
+-- | d = {} :: Int Q.+++ Int
+-- | e = {} :: MyType2
+-- | f = {} :: Int *** Int
+-- | ```
+-- | then a value of this type would be
+-- | ```
+-- | Map.fromFoldable
+-- |   [ Tuple (ModuleAlias $ ModuleName "Q") (ModuleName "Mod1")
+-- |   , Tuple (TypeName (Just (ModuleName "Q")) (Proper "MyType")) (ModuleName "Mod2")
+-- |   , Tuple (TypeOperator (Just (ModuleName "Q")) (Operator "/\")) (ModuleName "Mod2")
+-- |   , Tuple (TypeName $ Proper "MyType") (ModuleName "Mod3")
+-- |   , Tuple (TypeOperator $ Operator "/\") (ModuleName "Mod3")
+-- |   ]
+-- | ```
+type ImportedTypes = Map ImportedTypeKey ModuleName
 
 -- | Uses a two-step pass to generate all lenses/prisms for a file
 -- | 1. Generate a lens/prism for a data type and newtype
@@ -50,7 +87,7 @@ generateLensModule options filePath = do
       let
         modulePath = (getModulePath cst) <> ".Lens"
         Tuple labelNames generatedModule = runFree coerce $ unsafePartial $ runCodegenTModule modulePath do
-          labelNames <- traverse (genOptic options) $ extractDecls cst
+          labelNames <- traverse (genOptic options (getImportedTypes cst)) $ extractDecls cst
           let labelNameSet = foldl Set.union Set.empty labelNames
           unless (isJust options.genGlobalPropFile) do
             genLensProp labelNameSet
@@ -68,6 +105,56 @@ generateLensModule options filePath = do
         "Parsing module for file path failed. Could not generate lens file for path: '" <> filePath <> "'"
   where
   getModulePath (Module { header: ModuleHeader { name: Name { name: ModuleName mn }}}) = mn
+
+  getImportedTypes :: Module Void -> ImportedTypes
+  getImportedTypes
+    (Module
+      { header: ModuleHeader { imports, name: Name { name: sourceFileModName } }
+      , body: ModuleBody { decls }
+      }
+    ) = foldl insertTypesDefinedInSourceFile typesImportedBySourceFile decls
+    where
+    typesImportedBySourceFile = foldl insertImportedTypes Map.empty imports
+
+    insertTypesDefinedInSourceFile :: ImportedTypes -> Declaration Void -> ImportedTypes
+    insertTypesDefinedInSourceFile acc = case _ of
+      DeclData { name } _ -> do
+        Map.insert (TypeName (Just sourceFileModName) (unName name )) sourceFileModName acc
+      DeclNewtype { name } _ _ _ -> do
+        Map.insert (TypeName (Just sourceFileModName) (unName name )) sourceFileModName acc
+      DeclType { name } _ _ -> do
+        Map.insert (TypeName (Just sourceFileModName) (unName name )) sourceFileModName acc
+      DeclForeign _ _ (ForeignData _ (Labeled { label })) -> do
+        Map.insert (TypeName (Just sourceFileModName) (unName label )) sourceFileModName acc
+      DeclFixity { operator: FixityType _ _ _ opName } -> do
+        Map.insert (TypeOperator (Just sourceFileModName) (unName opName )) sourceFileModName acc
+      _ ->
+        acc
+
+    insertImportedTypes :: ImportedTypes -> ImportDecl Void -> ImportedTypes
+    insertImportedTypes acc (ImportDecl r) = do
+      case map (snd >>> unName) r.qualified, map extractNames r.names of
+        -- Import with no module alias or imported types:
+        --   import Foo (value, class SomeClass)
+        Nothing, Nothing -> acc
+
+        -- Import with only a module alias. We might be using types from it via its alias:
+        --   import Foo as Q
+        Just aliasModName, Nothing -> do
+          Map.insert (ModuleAlias aliasModName) (unName r.module) acc
+
+        -- Imported members that might include a module alias.
+        --   import Foo (MyType)
+        --   import Bar (MyOtherType) as Q
+        possibleModAlias, Just importedMembers -> do
+          foldl insertType acc importedMembers
+          where
+          insertType accum = case _ of
+            ImportType tyNameProper _ -> Map.insert (TypeName possibleModAlias (unName tyNameProper)) (unName r.module) accum
+            ImportTypeOp _ opName -> Map.insert (TypeOperator possibleModAlias (unName opName)) (unName r.module) accum
+            _ -> acc
+
+    extractNames = snd >>> \(Wrapped { value: Separated { head, tail }}) -> Array.cons head $ map snd tail
 
 hasDecls :: Module Void -> Boolean
 hasDecls (Module { body: ModuleBody { decls }}) = not $ Array.null decls
@@ -103,8 +190,13 @@ extractDecls cst = foldMapModule visitor cst
         _ -> mempty
     }
 
-genOptic :: Partial => GenOptions -> DeclType -> Codegen Void (Set String)
-genOptic opt = case _ of
+genOptic
+  :: Partial
+  => GenOptions
+  -> ImportedTypes
+  -> DeclType
+  -> Codegen Void (Set String)
+genOptic opt importMap = case _ of
   DTData rec -> case rec.constructors of
     -- This can never occur because `DeclData` case above only matches on `Just`
     -- which means there is at least one data constructor.
@@ -112,16 +204,17 @@ genOptic opt = case _ of
       pure Set.empty
 
     [ DataCtor { name: ctorName@(Name { name: Proper ctorNameStr }), fields } ] -> do
-        genLensProduct opt rec.tyName ctorName rec.tyVars ctorNameStr fields
+        genLensProduct opt importMap rec.tyName ctorName rec.tyVars ctorNameStr fields
 
     _ -> do
       sets <- for rec.constructors \(DataCtor { name: ctorName@(Name { name: Proper ctorNameStr }), fields }) ->
-        genPrismSum opt rec.tyName ctorName rec.tyVars ctorNameStr fields
+        genPrismSum opt importMap rec.tyName ctorName rec.tyVars ctorNameStr fields
       pure $ foldl Set.union Set.empty sets
 
   DTNewtype rec@{ tyName: Name { name: Proper tn }} -> do
     tyLens' <- importFrom "Data.Lens" $ importType "Lens'"
     lensNewtype <- importFrom "Data.Lens.Iso.Newtype" $ importValue "_Newtype"
+    genImportedType importMap rec.wrappedTy
     let
       declIdentifier = "_" <> tn
     tell
@@ -143,6 +236,7 @@ genOptic opt = case _ of
     when opt.genTypeAliasLens do
       identity_ <- importFrom "Prelude" $ importValue "identity"
       tyLens' <- importFrom "Data.Lens" $ importType "Lens'"
+      genImportedType importMap aliasedTy
       let
         declIdentifier = "_" <> tn
       tell
@@ -163,23 +257,93 @@ genOptic opt = case _ of
 unLabel :: forall a. Labeled (Name Label) a -> String
 unLabel (Labeled { label: Name { name: Label label } }) = label
 
+unName :: forall a. Name a -> a
+unName (Name { name }) = name
+
 tyVarToTypeVar :: TypeVarBinding Void -> Type Void
 tyVarToTypeVar = case _ of
   TypeVarName n -> typeVar n
   TypeVarKinded (Wrapped { value: Labeled { label: n }}) -> typeVar n
 
+genImportedType
+  :: Partial
+  => ImportedTypes
+  -> Type Void
+  -> Codegen Void Unit
+genImportedType importMap = go
+  where
+  go = case _ of
+    TypeVar _ -> pure unit
+    TypeConstructor (QualifiedName r) -> do
+      let
+        tyName :: Proper
+        tyName = r.name
+
+        byTypeName = Map.lookup (TypeName r.module tyName) importMap
+        byModAlias = r.module >>= \modName -> Map.lookup (ModuleAlias modName) importMap
+        qualifiedTyName = maybe "" (flip append "." <<< unwrap) r.module <> unwrap tyName
+      case byTypeName <|> byModAlias of
+        Just modName -> do
+          void $ importFrom modName $ importType qualifiedTyName
+        Nothing ->
+          pure unit
+
+    TypeWildcard _ -> pure unit
+    TypeHole _ -> pure unit
+    TypeString _ _ -> pure unit
+    TypeRow (Wrapped { value }) -> goRow value
+    TypeRecord (Wrapped { value }) -> goRow value
+    TypeForall _ tyVars _ ty -> goTyVars tyVars *> go ty
+    TypeKinded ty _ kind -> go ty *> go kind
+    TypeApp f as -> go f *> traverse_ go as
+    TypeOp l ops -> go l *> for_ ops \(Tuple qualNameOp ty) -> do
+      importTypeOperator qualNameOp *> go ty
+    TypeOpName qualNameOp -> importTypeOperator qualNameOp
+    TypeArrow f _ a -> go f *> go a
+    TypeArrowName _ -> pure unit
+    TypeConstrained constraint _ ty -> go constraint *> go ty
+    TypeParens (Wrapped { value }) -> go value
+    TypeUnaryRow _ ty -> go ty
+    TypeError a -> absurd a
+
+  goRow (Row r) = do
+    for_ r.labels \(Separated { head, tail }) -> do
+      for_ (Array.cons head $ map snd tail) \(Labeled { value }) -> do
+        go value
+    for_ r.tail \(Tuple _ ty) -> go ty
+
+  goTyVars = traverse_ case _ of
+    TypeVarName _ -> pure unit
+    TypeVarKinded (Wrapped { value: Labeled { value }}) -> go value
+
+  importTypeOperator (QualifiedName r) = do
+    let
+      opName :: Operator
+      opName = r.name
+
+      byOpName = Map.lookup (TypeOperator r.module opName) importMap
+      byModAlias = r.module >>= \modName -> Map.lookup (ModuleAlias modName) importMap
+      qualifiedOpName = maybe "" (flip append "." <<< unwrap) r.module <> unwrap opName
+    case byOpName <|> byModAlias of
+      Just modName -> do
+        void $ importFrom modName $ importTypeOp qualifiedOpName
+      Nothing ->
+        pure unit
+
 genLensProduct
   :: Partial
   => GenOptions
+  -> ImportedTypes
   -> Name Proper
   -> Name Proper
   -> Array (TypeVarBinding Void)
   -> String
   -> Array (Type Void)
   -> Codegen Void (Set String)
-genLensProduct opt tyName ctorName tyVars ctorNameStr fields = do
+genLensProduct opt importMap tyName ctorName tyVars ctorNameStr fields = do
   tyLens' <- importFrom "Data.Lens" $ importType "Lens'"
   lens <- importFrom "Data.Lens.Lens" $ importValue "lens"
+  traverse_ (genImportedType importMap) fields
   let
     declIdentifier = "_" <> ctorNameStr
   case fields of
@@ -289,13 +453,14 @@ genLensProduct opt tyName ctorName tyVars ctorNameStr fields = do
 genPrismSum
   :: Partial
   => GenOptions
+  -> ImportedTypes
   -> Name Proper
   -> Name Proper
   -> Array (TypeVarBinding Void)
   -> String
   -> Array (Type Void)
   -> Codegen Void (Set String)
-genPrismSum opt tyName ctorName tyVars ctorNameStr fields = do
+genPrismSum opt importMap tyName ctorName tyVars ctorNameStr fields = do
   tyPrism' <- importFrom "Data.Lens.Prism" $ importType "Prism'"
   prismFn <- importFrom "Data.Lens.Prism" $ importValue "prism"
   eitherRec <- importFrom "Data.Either"
@@ -303,6 +468,7 @@ genPrismSum opt tyName ctorName tyVars ctorNameStr fields = do
     , rightCtor: importCtor "Either" "Right"
     , ty: importType "Either"
     }
+  traverse_ (genImportedType importMap) fields
   let
     declIdentifier = "_" <> ctorNameStr
   case fields of
