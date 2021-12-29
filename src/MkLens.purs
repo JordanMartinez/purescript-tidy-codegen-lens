@@ -112,6 +112,10 @@ generateLensModule options filePath = do
     for_ imports case _ of
       ImportDecl r@{ names: Nothing, qualified: Nothing } -> do
         importOpen $ unName r.module
+      ImportDecl _r@{ names: Just (Tuple (Just _hidingKeyword) _members), qualified: Nothing } -> do
+        -- BUG: Unaliased open imports with hidden members cannot be generated yet
+        -- Pending PR to `purescript-tidy-codegen`
+        pure unit
       _ ->
         pure unit
 
@@ -142,28 +146,39 @@ generateLensModule options filePath = do
 
     insertImportedTypes :: ImportedTypes -> ImportDecl Void -> ImportedTypes
     insertImportedTypes acc (ImportDecl r) = do
-      case map (snd >>> unName) r.qualified, map extractNames r.names of
-        -- Import with no module alias or imported types:
-        --   import Foo (value, class SomeClass)
+      case map (snd >>> unName) r.qualified, r.names of
+        -- Open import: import with no module alias or imported members:
+        --   import Prelude
+        -- Open imports are imported into the generated module via `importOpenImports`
         Nothing, Nothing -> acc
+
+        -- Open import with a few members hidden.
+        --   import Prelude hiding (show)
+        -- Open imports are imported into the generated module via `importOpenImports`
+        Nothing, Just (Tuple (Just _hidingKeyword) _) -> acc
 
         -- Import with only a module alias. We might be using types from it via its alias:
         --   import Foo as Q
         Just aliasModName, Nothing -> do
           Map.insert (ModuleAlias aliasModName) (unName r.module) acc
 
+        -- Import with module alias, hiding a few types.
+        --   import Bar hiding (MyOtherType) as Q
+        Just aliasModName, Just (Tuple (Just _hidingKeyword) _) -> do
+          Map.insert (ModuleAlias aliasModName) (unName r.module) acc
+
         -- Imported members that might include a module alias.
         --   import Foo (MyType)
         --   import Bar (MyOtherType) as Q
-        possibleModAlias, Just importedMembers -> do
-          foldl insertType acc importedMembers
+        possibleModAlias, Just (Tuple Nothing members) -> do
+          foldl insertType acc $ extractNames members
           where
           insertType accum = case _ of
             ImportType tyNameProper _ -> Map.insert (TypeName possibleModAlias (unName tyNameProper)) (unName r.module) accum
             ImportTypeOp _ opName -> Map.insert (TypeOperator possibleModAlias (unName opName)) (unName r.module) accum
             _ -> acc
 
-    extractNames = snd >>> \(Wrapped { value: Separated { head, tail } }) -> Array.cons head $ map snd tail
+    extractNames (Wrapped { value: Separated { head, tail } }) = Array.cons head $ map snd tail
 
 hasDecls :: Module Void -> Boolean
 hasDecls (Module { body: ModuleBody { decls } }) = not $ Array.null decls
