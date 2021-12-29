@@ -6,6 +6,7 @@ import Data.Lens.Lens (lens)
 import Data.Lens.Prism (Prism', prism)
 import Data.Lens.Record (prop)
 import Prelude (Unit, const, unit)
+import Snapshots.UseAbcLabelStyle (Product(..), Sum(..))
 import Type.Proxy (Proxy(..))
 
 _Product

@@ -3,6 +3,7 @@ module Snapshots.UseTypeAliases.Lens where
 import Data.Lens (Lens')
 import Data.Lens.Record (prop)
 import Prelude (identity)
+import Snapshots.UseTypeAliases (TypeAlias_ArrayString, TypeAlias_Record, TypeAlias_String)
 import Type.Proxy (Proxy(..))
 
 _TypeAlias_Record :: Lens' TypeAlias_Record

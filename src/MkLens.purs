@@ -30,10 +30,10 @@ import Node.Path as Path
 import Partial.Unsafe (unsafePartial)
 import PureScript.CST (RecoveredParserResult(..), parseModule)
 import PureScript.CST.Traversal (defaultMonoidalVisitor, foldMapModule)
-import PureScript.CST.Types (DataCtor(..), Declaration(..), FixityOp(..), Foreign(..), Import(..), ImportDecl(..), Label(..), Labeled(..), Module(..), ModuleBody(..), ModuleHeader(..), ModuleName(..), Name(..), Operator, Proper(..), QualifiedName(..), Row(..), Separated(..), Type(..), TypeVarBinding(..), Wrapped(..))
+import PureScript.CST.Types (DataCtor(..), Declaration(..), FixityOp(..), Foreign(..), Import(..), ImportDecl(..), Label(..), Labeled(..), Module(..), ModuleBody(..), ModuleHeader(..), ModuleName, Name(..), Operator, Proper(..), QualifiedName(..), Row(..), Separated(..), Type(..), TypeVarBinding(..), Wrapped(..))
 import Safe.Coerce (coerce)
 import Tidy.Codegen (binderCtor, binderRecord, binderVar, caseBranch, declSignature, declValue, exprApp, exprCase, exprCtor, exprIdent, exprLambda, exprRecord, exprSection, exprTyped, printModule, typeApp, typeCtor, typeForall, typeRecord, typeString, typeVar)
-import Tidy.Codegen.Monad (Codegen, importCtor, importFrom, importOpen, importType, importTypeOp, importValue, runCodegenTModule)
+import Tidy.Codegen.Monad (Codegen, importCtor, importFrom, importOpen, importType, importTypeAll, importTypeOp, importValue, runCodegenTModule)
 import Types (RecordLabelStyle(..))
 
 type GenOptions =
@@ -85,10 +85,11 @@ generateLensModule options filePath = do
   case parseModule content of
     ParseSucceeded cst -> do
       let
-        modulePath = (getModulePath cst) <> ".Lens"
+        sourceFileModName = getSourceFileModuleName cst
+        modulePath = (unwrap sourceFileModName) <> ".Lens"
         Tuple labelNames generatedModule = runFree coerce $ unsafePartial $ runCodegenTModule modulePath do
           importOpenImports cst
-          labelNames <- traverse (genOptic options (getImportedTypes cst)) $ extractDecls cst
+          labelNames <- traverse (genOptic options sourceFileModName (getImportedTypes cst)) $ extractDecls cst
           let labelNameSet = foldl Set.union Set.empty labelNames
           unless (isJust options.genGlobalPropFile) do
             genLensProp labelNameSet
@@ -105,7 +106,7 @@ generateLensModule options filePath = do
       liftEffect $ throw $
         "Parsing module for file path failed. Could not generate lens file for path: '" <> filePath <> "'"
   where
-  getModulePath (Module { header: ModuleHeader { name: Name { name: ModuleName mn } } }) = mn
+  getSourceFileModuleName (Module { header: ModuleHeader { name: Name { name } } }) = name
 
   importOpenImports :: Module Void -> Codegen Void Unit
   importOpenImports (Module { header: ModuleHeader { imports }}) =
@@ -132,15 +133,15 @@ generateLensModule options filePath = do
     insertTypesDefinedInSourceFile :: ImportedTypes -> Declaration Void -> ImportedTypes
     insertTypesDefinedInSourceFile acc = case _ of
       DeclData { name } _ -> do
-        Map.insert (TypeName (Just sourceFileModName) (unName name)) sourceFileModName acc
+        Map.insert (TypeName Nothing (unName name)) sourceFileModName acc
       DeclNewtype { name } _ _ _ -> do
-        Map.insert (TypeName (Just sourceFileModName) (unName name)) sourceFileModName acc
+        Map.insert (TypeName Nothing (unName name)) sourceFileModName acc
       DeclType { name } _ _ -> do
-        Map.insert (TypeName (Just sourceFileModName) (unName name)) sourceFileModName acc
+        Map.insert (TypeName Nothing (unName name)) sourceFileModName acc
       DeclForeign _ _ (ForeignData _ (Labeled { label })) -> do
-        Map.insert (TypeName (Just sourceFileModName) (unName label)) sourceFileModName acc
+        Map.insert (TypeName Nothing (unName label)) sourceFileModName acc
       DeclFixity { operator: FixityType _ _ _ opName } -> do
-        Map.insert (TypeOperator (Just sourceFileModName) (unName opName)) sourceFileModName acc
+        Map.insert (TypeOperator Nothing (unName opName)) sourceFileModName acc
       _ ->
         acc
 
@@ -217,10 +218,11 @@ extractDecls cst = foldMapModule visitor cst
 genOptic
   :: Partial
   => GenOptions
+  -> ModuleName
   -> ImportedTypes
   -> DeclType
   -> Codegen Void (Set String)
-genOptic opt importMap = case _ of
+genOptic opt souceFileModName importMap = case _ of
   DTData rec -> case rec.constructors of
     -- This can never occur because `DeclData` case above only matches on `Just`
     -- which means there is at least one data constructor.
@@ -228,9 +230,11 @@ genOptic opt importMap = case _ of
       pure Set.empty
 
     [ DataCtor { name: ctorName@(Name { name: Proper ctorNameStr }), fields } ] -> do
+      void $ importFrom souceFileModName $ importTypeAll $ unwrap $ unName rec.tyName
       genLensProduct opt importMap rec.tyName ctorName rec.tyVars ctorNameStr fields
 
     _ -> do
+      void $ importFrom souceFileModName $ importTypeAll $ unwrap $ unName rec.tyName
       sets <- for rec.constructors \(DataCtor { name: ctorName@(Name { name: Proper ctorNameStr }), fields }) ->
         genPrismSum opt importMap rec.tyName ctorName rec.tyVars ctorNameStr fields
       pure $ foldl Set.union Set.empty sets
@@ -238,6 +242,7 @@ genOptic opt importMap = case _ of
   DTNewtype rec@{ tyName: Name { name: Proper tn } } -> do
     tyLens' <- importFrom "Data.Lens" $ importType "Lens'"
     lensNewtype <- importFrom "Data.Lens.Iso.Newtype" $ importValue "_Newtype"
+    void $ importFrom souceFileModName $ importTypeAll $ unwrap $ unName rec.tyName
     genImportedType importMap rec.wrappedTy
     let
       declIdentifier = "_" <> tn
@@ -260,6 +265,7 @@ genOptic opt importMap = case _ of
     when opt.genTypeAliasLens do
       identity_ <- importFrom "Prelude" $ importValue "identity"
       tyLens' <- importFrom "Data.Lens" $ importType "Lens'"
+      void $ importFrom souceFileModName $ importType $ unwrap $ unName rec.tyName
       genImportedType importMap aliasedTy
       let
         declIdentifier = "_" <> tn

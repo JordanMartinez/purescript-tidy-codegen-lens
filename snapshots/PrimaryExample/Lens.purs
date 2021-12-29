@@ -14,6 +14,7 @@ import Snapshots.Imports.ImportedExplicitTypesNoModuleAlias (MyAlias, MyData, My
 import Snapshots.Imports.ImportedExplicitTypesWithModuleAlias as Shared
 import Snapshots.Imports.ModuleAliasOnly as Q
 import Snapshots.Imports.SharedModuleAlias as Shared
+import Snapshots.PrimaryExample (AliasDefinedInSourceFile, FfiTypeDefinedInSourceFile, DataDefinedInSourceFile(..), Data_NoTyVars_Args0(..), Data_NoTyVars_Args1(..), Data_NoTyVars_Args2(..), Data_NoTyVars_Args3(..), Data_Product_ImportedTypesAreReimported(..), Data_Sum_ImportedTypesAreReimported(..), Data_TyVars_Args0(..), Data_TyVars_Args1(..), Data_TyVars_Args2(..), Data_TyVars_Args3(..), EnsureSharedImportIsUsed(..), NewtypeDefinedInSourceFile(..), NewtypedRecord(..), NewtypedType(..), Record_ImportedTypesAreReimported(..))
 import Type.Proxy (Proxy(..))
 
 _Data_NoTyVars_Args0 :: Lens' Data_NoTyVars_Args0 Unit
