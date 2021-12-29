@@ -1,6 +1,6 @@
 # purescript-tidy-codegen-lens
 
-Generate lenses and prisms for your data type automatically.
+Generate lenses and prisms for your data types automatically.
 
 An input file, `./Foo.purs`, will generate an output file `./Foo/Lens.purs` if `Foo.purs` contains any type declarations.
 
