@@ -36,6 +36,8 @@ tidy-mklens
     PURS_GLOBS                                    Globs for PureScript sources.
 ```
 
+## Examples
+
 The table illustrates some of the CLI args above via the current output on the files stored in the [snapshots folder](./snapshots).
 
 | Purpose | Files |
