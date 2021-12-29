@@ -8,7 +8,7 @@ This is currently a WIP.
 
 ## Usage
 
-Run `spago build` and then `tidy-mklens <CLI args>`
+Run `spago build` and then `./tidy-mklens <CLI args>`
 
 See the [snapshots folder](./snapshots) for current output. Files were generated using the below commands:
 
