@@ -151,6 +151,7 @@ generateLensModule options filePath = do
           -- is to use `Qualifier.import`
           qualify qualified s =
             (maybe "" (flip append "." <<< unwrap <<< unName) $ map snd qualified) <> s
+      _ -> pure unit
 
   getImportedTypes :: Module Void -> ImportedTypes
   getImportedTypes
