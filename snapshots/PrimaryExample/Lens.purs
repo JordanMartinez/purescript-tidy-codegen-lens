@@ -19,7 +19,7 @@ import Snapshots.Imports.ImportedExplicitTypesNoModuleAlias (MyAlias, MyData, My
 import Snapshots.Imports.ImportedExplicitTypesWithModuleAlias as Shared
 import Snapshots.Imports.ModuleAliasOnly as Q
 import Snapshots.Imports.SharedModuleAlias as Shared
-import Snapshots.PrimaryExample (AliasDefinedInSourceFile, FfiTypeDefinedInSourceFile, NewtypeDefinedInSourceFile, Newtype_TypeExported_CtorExported_All, Newtype_TypeExported_CtorExported_ByName, NewtypedRecord, NewtypedType, Record_ImportedTypesAreReimported, TypeAlias_Record, TypeAlias_Type, TypeAlias_TypeExported, DataDefinedInSourceFile(..), Data_NoTyVars_Args0(..), Data_NoTyVars_Args1(..), Data_NoTyVars_Args2(..), Data_NoTyVars_Args3(..), Data_NoTyVars_Sum_Args0(..), Data_NoTyVars_Sum_Args1(..), Data_NoTyVars_Sum_Args2(..), Data_NoTyVars_Sum_Args3(..), Data_Product_ImportedTypesAreReimported(..), Data_Sum_ImportedTypesAreReimported(..), Data_TyVars_Args0(..), Data_TyVars_Args1(..), Data_TyVars_Args2(..), Data_TyVars_Args3(..), Data_TyVars_Sum_Args0(..), Data_TyVars_Sum_Args1(..), Data_TyVars_Sum_Args2(..), Data_TyVars_Sum_Args3(..), Data_TypeExported_CtorExported_Product_All(..), Data_TypeExported_CtorExported_Sum_All(..), EnsureSharedImportIsUsed(..))
+import Snapshots.PrimaryExample (AliasDefinedInSourceFile, FfiTypeDefinedInSourceFile, NewtypeDefinedInSourceFile, Newtype_TypeExported_CtorExported_All, Newtype_TypeExported_CtorExported_ByName, NewtypedRecord, NewtypedType, Record_ImportedTypesAreReimported, TypeAlias_Record, TypeAlias_Type, TypeAlias_TypeExported, DataDefinedInSourceFile(..), Data_NoTyVars_Args0(..), Data_NoTyVars_Args1(..), Data_NoTyVars_Args2(..), Data_NoTyVars_Args3(..), Data_NoTyVars_Sum_Args0(..), Data_NoTyVars_Sum_Args1(..), Data_NoTyVars_Sum_Args2(..), Data_NoTyVars_Sum_Args3(..), Data_Product_ImportedTypesAreReimported(..), Data_Sum_ImportedTypesAreReimported(..), Data_TyVars_Args0(..), Data_TyVars_Args1(..), Data_TyVars_Args2(..), Data_TyVars_Args3(..), Data_TyVars_Sum_Args0(..), Data_TyVars_Sum_Args1(..), Data_TyVars_Sum_Args2(..), Data_TyVars_Sum_Args3(..), Data_TypeExported_CtorExported_Product_All(..), Data_TypeExported_CtorExported_Sum_All(..), Data_Wrapping_Record(..), EnsureSharedImportIsUsed(..))
 import Type.Proxy (Proxy(..))
 
 _Data_NoTyVars_Args0 :: Lens' Data_NoTyVars_Args0 Unit
@@ -138,8 +138,15 @@ _Data_TyVars_Sum_Args3_Ignored = prism (const Data_TyVars_Sum_Args3_Ignored) cas
   Data_TyVars_Sum_Args3_Ignored -> Right unit
   other -> Left other
 
+_Data_Wrapping_Record
+  :: forall a b c
+   . Lens' (Data_Wrapping_Record a b c)
+       { recordFieldReferencedInExportedData :: a
+       }
+_Data_Wrapping_Record = lens (\(Data_Wrapping_Record a) -> a) Data_Wrapping_Record
+
 _TypeAlias_Record :: Lens' TypeAlias_Record
-  { foo :: Int
+  { recordFieldReferencedInExportedTypeAlias :: Int
   , bar :: String
   , baz :: Boolean
   }
@@ -380,11 +387,18 @@ _propDefinedInSourceFile = prop (Proxy :: Proxy "definedInSourceFile")
 _propFirst :: forall r a. Lens' { first :: a | r } a
 _propFirst = prop (Proxy :: Proxy "first")
 
-_propFoo :: forall r a. Lens' { foo :: a | r } a
-_propFoo = prop (Proxy :: Proxy "foo")
-
 _propNoAlias :: forall r a. Lens' { noAlias :: a | r } a
 _propNoAlias = prop (Proxy :: Proxy "noAlias")
+
+_propRecordFieldReferencedInExportedData
+  :: forall r a. Lens' { recordFieldReferencedInExportedData :: a | r } a
+_propRecordFieldReferencedInExportedData = prop
+  (Proxy :: Proxy "recordFieldReferencedInExportedData")
+
+_propRecordFieldReferencedInExportedTypeAlias
+  :: forall r a. Lens' { recordFieldReferencedInExportedTypeAlias :: a | r } a
+_propRecordFieldReferencedInExportedTypeAlias = prop
+  (Proxy :: Proxy "recordFieldReferencedInExportedTypeAlias")
 
 _propSecond :: forall r a. Lens' { second :: a | r } a
 _propSecond = prop (Proxy :: Proxy "second")

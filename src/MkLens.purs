@@ -328,12 +328,6 @@ genOptic opt souceFileModName exportMap importMap { tyName, tyVars, keyword } =
         Data_Constructors constructors -> genDataOptic constructors
         Newtype_WrappedType wrappedTy -> genNewtypeOptic wrappedTy
   where
-    extractReferencedLabelNames ty = case ty of
-      TypeRecord (Wrapped { value: Row { labels: Just (Separated { head, tail }) } }) -> do
-        pure $ foldl (\acc next -> Set.insert (unLabel $ snd next) acc) (Set.singleton $ unLabel head) tail
-      _ ->
-        pure Set.empty
-
     genDataOptic constructors = case constructors of
       -- This can never occur because `DeclData` case above only matches on `Just`
       -- which means there is at least one data constructor.
@@ -366,7 +360,7 @@ genOptic opt souceFileModName exportMap importMap { tyName, tyVars, keyword } =
                 ]
         , declValue declIdentifier [] (exprIdent lensNewtype)
         ]
-      extractReferencedLabelNames wrappedTy
+      pure $ extractReferencedLabelNames wrappedTy
 
     genTypeAliasLens aliasedTy = do
       when opt.genTypeAliasLens do
@@ -385,7 +379,14 @@ genOptic opt souceFileModName exportMap importMap { tyName, tyVars, keyword } =
                   ]
           , declValue declIdentifier [] (exprIdent identity_)
           ]
-      extractReferencedLabelNames aliasedTy
+      pure $ extractReferencedLabelNames aliasedTy
+
+extractReferencedLabelNames :: Type Void -> Set String
+extractReferencedLabelNames ty = case ty of
+  TypeRecord (Wrapped { value: Row { labels: Just (Separated { head, tail }) } }) -> do
+    foldl (\acc next -> Set.insert (unLabel $ snd next) acc) (Set.singleton $ unLabel head) tail
+  _ ->
+    Set.empty
 
 tyVarToTypeVar :: TypeVarBinding Void -> Type Void
 tyVarToTypeVar = case _ of
@@ -518,7 +519,7 @@ genLensProduct opt importMap tyName ctorName tyVars ctorNameStr fields = do
               , exprCtor ctorName
               ]
         ]
-      pure Set.empty
+      pure $ extractReferencedLabelNames ty1
 
     -- Given:
     --    data Foo a b c = Foo a b
@@ -545,7 +546,7 @@ genLensProduct opt importMap tyName ctorName tyVars ctorNameStr fields = do
                   (exprApp (exprCtor ctorName) [ exprIdent "a", exprIdent "b" ])
               ]
         ]
-      pure Set.empty
+      pure $ Set.union (extractReferencedLabelNames ty1) (extractReferencedLabelNames ty2)
     -- Given:
     --    data Foo a b ... n = Foo a b ... n
     -- Produce
@@ -661,7 +662,7 @@ genPrismSum opt importMap tyName ctorName tyVars ctorNameStr fields = do
                   ]
               ]
         ]
-      pure Set.empty
+      pure $ extractReferencedLabelNames ty1
 
     -- Given:
     --    data Foo a b c
@@ -696,7 +697,7 @@ genPrismSum opt importMap tyName ctorName tyVars ctorNameStr fields = do
                   ]
               ]
         ]
-      pure Set.empty
+      pure $ Set.union (extractReferencedLabelNames ty1) (extractReferencedLabelNames ty2)
 
     -- Given:
     --    data Foo a b ... n

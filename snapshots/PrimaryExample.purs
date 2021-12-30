@@ -23,6 +23,7 @@ module Snapshots.PrimaryExample
   , Data_TypeExported_CtorExported_Sum_All(..)
   -- , Data_TypeNotExported(..)
   , Data_TypeOnlyExported
+  , Data_Wrapping_Record(..)
   , EnsureSharedImportIsUsed(..)
   , FfiTypeDefinedInSourceFile
   , NewtypeDefinedInSourceFile(..)
@@ -108,8 +109,13 @@ data Data_TyVars_Sum_Args3 a b c d
   = Data_TyVars_Sum_Args3 a b c
   | Data_TyVars_Sum_Args3_Ignored
 
+data Data_Wrapping_Record a b c
+  = Data_Wrapping_Record
+      { recordFieldReferencedInExportedData :: a
+      }
+
 type TypeAlias_Record =
-  { foo :: Int
+  { recordFieldReferencedInExportedTypeAlias :: Int
   , bar :: String
   , baz :: Boolean
   }
