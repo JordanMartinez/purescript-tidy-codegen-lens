@@ -114,7 +114,7 @@ generateLensModule options filePath = do
       ImportDecl r@{ names: Nothing, qualified: Nothing } -> do
         importOpen $ unName r.module
       ImportDecl r@{ names: Just (Tuple (Just _hidingKeyword) _members), qualified: q } -> do
-        for_ (extractNames _members) case _ of
+        for_ (unWrappedSeparated _members) case _ of
           ImportValue impName ->
             importOpenHiding (unName r.module) $ importValue $ qualify q $ unwrap $ unName impName
           ImportOp opName -> do
@@ -204,14 +204,18 @@ generateLensModule options filePath = do
         --   import Foo (MyType)
         --   import Bar (MyOtherType) as Q
         possibleModAlias, Just (Tuple Nothing members) -> do
-          foldl insertType acc $ extractNames members
+          foldl insertType acc $ unWrappedSeparated members
           where
           insertType accum = case _ of
             ImportType tyNameProper _ -> Map.insert (TypeName possibleModAlias (unName tyNameProper)) (unName r.module) accum
             ImportTypeOp _ opName -> Map.insert (TypeOperator possibleModAlias (unName opName)) (unName r.module) accum
             _ -> acc
 
-  extractNames (Wrapped { value: Separated { head, tail } }) = Array.cons head $ map snd tail
+  unWrappedSeparated :: forall a. Wrapped (Separated a) -> Array a
+  unWrappedSeparated (Wrapped { value }) = unSeparate value
+
+  unSeparate :: forall a. Separated a -> Array a
+  unSeparate (Separated { head, tail }) = Array.cons head $ map snd tail
 
 hasDecls :: Module Void -> Boolean
 hasDecls (Module { body: ModuleBody { decls } }) = not $ Array.null decls
