@@ -268,22 +268,16 @@ generateLensModule options filePath = do
 hasDecls :: Module Void -> Boolean
 hasDecls (Module { body: ModuleBody { decls } }) = not $ Array.null decls
 
-data DeclType
-  = DTNewtype
-      { tyName :: Name Proper
-      , tyVars :: Array (TypeVarBinding Void)
-      , wrappedTy :: Type Void
-      }
-  | DTType
-      { tyName :: Name Proper
-      , tyVars :: Array (TypeVarBinding Void)
-      , aliasedTy :: Type Void
-      }
-  | DTData
-      { tyName :: Name Proper
-      , tyVars :: Array (TypeVarBinding Void)
-      , constructors :: Array (DataCtor Void)
-      }
+data DeclTypeKeyword
+  = Newtype_WrappedType (Type Void)
+  | Data_Constructors (Array (DataCtor Void))
+  | Type_AliasedType (Type Void)
+
+type DeclType =
+  { tyName :: Name Proper
+  , tyVars :: Array (TypeVarBinding Void)
+  , keyword :: DeclTypeKeyword
+  }
 
 extractDecls :: Module Void -> Array DeclType
 extractDecls cst = foldMapModule visitor cst
@@ -291,11 +285,11 @@ extractDecls cst = foldMapModule visitor cst
   visitor = defaultMonoidalVisitor
     { onDecl = case _ of
         DeclData ({ name, vars }) (Just (Tuple _ sep)) -> do
-          Array.singleton $ DTData { tyName: name, tyVars: vars, constructors: unSeparated sep }
+          Array.singleton $ { tyName: name, tyVars: vars, keyword: Data_Constructors (unSeparated sep) }
         DeclNewtype ({ name, vars }) _ _ ty -> do
-          Array.singleton $ DTNewtype { tyName: name, tyVars: vars, wrappedTy: ty }
+          Array.singleton $ { tyName: name, tyVars: vars, keyword: Newtype_WrappedType ty }
         DeclType ({ name, vars }) _ ty -> do
-          Array.singleton $ DTType { tyName: name, tyVars: vars, aliasedTy: ty }
+          Array.singleton $ { tyName: name, tyVars: vars, keyword: Type_AliasedType ty }
         _ -> mempty
     }
 
@@ -307,89 +301,91 @@ genOptic
   -> ImportedTypes
   -> DeclType
   -> Codegen Void (Set String)
-genOptic opt souceFileModName exportMap importMap = case _ of
-  DTData rec -> case exportsFor (unName rec.tyName) of
-    -- Type wasn't exported
-    Nothing ->
-      pure Set.empty
+genOptic opt souceFileModName exportMap importMap { tyName, tyVars, keyword } =
+  case exportMap of
+    -- Everything was exported
+    --    module Foo where
+    Nothing -> case keyword of
+      Type_AliasedType _ -> pure Set.empty
+      Data_Constructors constructors -> genDataOptic constructors
+      Newtype_WrappedType wrappedTy -> genNewtypeOptic wrappedTy
 
-    Just DCMNone ->
-      pure Set.empty
+    -- Only some things were exported
+    --    module Foo (something) where
+    Just exportedTys -> case Map.lookup (unName tyName) exportedTys of
+      -- Type wasn't exported
+      Nothing ->
+        pure Set.empty
 
-    Just DCMAll -> case rec.constructors of
+      -- Type was exported, but none of its members (if it has any)
+      Just DCMNone -> case keyword of
+        Data_Constructors _ -> pure Set.empty
+        Newtype_WrappedType _ -> pure Set.empty
+        Type_AliasedType aliasedTy -> genTypeAliasLens aliasedTy
+
+      Just DCMAll -> case keyword of
+        Type_AliasedType _ -> pure Set.empty
+        Data_Constructors constructors -> genDataOptic constructors
+        Newtype_WrappedType wrappedTy -> genNewtypeOptic wrappedTy
+  where
+    extractReferencedLabelNames ty = case ty of
+      TypeRecord (Wrapped { value: Row { labels: Just (Separated { head, tail }) } }) -> do
+        pure $ foldl (\acc next -> Set.insert (unLabel $ snd next) acc) (Set.singleton $ unLabel head) tail
+      _ ->
+        pure Set.empty
+
+    genDataOptic constructors = case constructors of
       -- This can never occur because `DeclData` case above only matches on `Just`
       -- which means there is at least one data constructor.
       [] ->
         pure Set.empty
 
       [ DataCtor { name: ctorName@(Name { name: (Proper ctorNameStr) }), fields } ] -> do
-        void $ importFrom souceFileModName $ importTypeAll $ unwrap $ unName rec.tyName
-        genLensProduct opt importMap rec.tyName ctorName rec.tyVars ctorNameStr fields
+        void $ importFrom souceFileModName $ importTypeAll $ unwrap $ unName tyName
+        genLensProduct opt importMap tyName ctorName tyVars ctorNameStr fields
 
       _ -> do
-        void $ importFrom souceFileModName $ importTypeAll (unwrap $ unName rec.tyName)
-        sets <- for rec.constructors \(DataCtor { name: ctorName@(Name { name: Proper ctorNameStr }), fields }) ->
-          genPrismSum opt importMap rec.tyName ctorName rec.tyVars ctorNameStr fields
+        void $ importFrom souceFileModName $ importTypeAll (unwrap $ unName tyName)
+        sets <- for constructors \(DataCtor { name: ctorName@(Name { name: Proper ctorNameStr }), fields }) ->
+          genPrismSum opt importMap tyName ctorName tyVars ctorNameStr fields
         pure $ foldl Set.union Set.empty sets
 
-  DTNewtype rec -> case exportsFor (unName rec.tyName) of
-    Nothing -> pure Set.empty
-    Just DCMNone -> pure Set.empty
-    Just DCMAll -> do
+    genNewtypeOptic wrappedTy = do
       tyLens' <- importFrom "Data.Lens" $ importType "Lens'"
       lensNewtype <- importFrom "Data.Lens.Iso.Newtype" $ importValue "_Newtype"
-      void $ importFrom souceFileModName $ importType $ unwrap $ unName rec.tyName
-      genImportedType importMap rec.wrappedTy
+      void $ importFrom souceFileModName $ importType $ unwrap $ unName tyName
+      genImportedType importMap wrappedTy
       let
-        declIdentifier = "_" <> (unwrap $ unName rec.tyName)
+        declIdentifier = "_" <> (unwrap $ unName tyName)
       tell
         [ declSignature declIdentifier
-            $ typeForall rec.tyVars
+            $ typeForall tyVars
             $ typeApp (typeCtor tyLens')
-                [ (typeApp (typeCtor rec.tyName) $ map tyVarToTypeVar rec.tyVars)
-                , rec.wrappedTy
+                [ (typeApp (typeCtor tyName) $ map tyVarToTypeVar tyVars)
+                , wrappedTy
                 ]
         , declValue declIdentifier [] (exprIdent lensNewtype)
         ]
-      case rec.wrappedTy of
-        TypeRecord (Wrapped { value: Row { labels: Just (Separated { head, tail }) } }) -> do
-          pure $ foldl (\acc next -> Set.insert (unLabel $ snd next) acc) (Set.singleton $ unLabel head) tail
-        _ ->
-          pure Set.empty
+      extractReferencedLabelNames wrappedTy
 
-  DTType rec@{ tyName: Name { name: Proper tn }, aliasedTy } -> do
-    case exportsFor (unName rec.tyName) of
-      Nothing ->
-        pure Set.empty
-
-      -- type aliases won't have any exported members
-      Just _ -> do
-        when opt.genTypeAliasLens do
-          identity_ <- importFrom "Prelude" $ importValue "identity"
-          tyLens' <- importFrom "Data.Lens" $ importType "Lens'"
-          void $ importFrom souceFileModName $ importType $ unwrap $ unName rec.tyName
-          genImportedType importMap aliasedTy
-          let
-            declIdentifier = "_" <> tn
-          tell
-            [ declSignature declIdentifier
-                $ typeForall rec.tyVars
-                $ typeApp (typeCtor tyLens')
-                    [ (typeApp (typeCtor rec.tyName) $ map tyVarToTypeVar rec.tyVars)
-                    , rec.aliasedTy
-                    ]
-            , declValue declIdentifier [] (exprIdent identity_)
-            ]
-
-        case aliasedTy of
-          TypeRecord (Wrapped { value: Row { labels: Just (Separated { head, tail }) } }) -> do
-            pure $ foldl (\acc next -> Set.insert (unLabel $ snd next) acc) (Set.singleton $ unLabel head) tail
-          _ ->
-            pure Set.empty
-  where
-    exportsFor ty = case exportMap of
-      Nothing -> Just DCMAll
-      Just exports -> Map.lookup ty exports
+    genTypeAliasLens aliasedTy = do
+      when opt.genTypeAliasLens do
+        identity_ <- importFrom "Prelude" $ importValue "identity"
+        tyLens' <- importFrom "Data.Lens" $ importType "Lens'"
+        void $ importFrom souceFileModName $ importType $ unwrap $ unName tyName
+        genImportedType importMap aliasedTy
+        let
+          declIdentifier = "_" <> (unwrap $ unName tyName)
+        tell
+          [ declSignature declIdentifier
+              $ typeForall tyVars
+              $ typeApp (typeCtor tyLens')
+                  [ (typeApp (typeCtor tyName) $ map tyVarToTypeVar tyVars)
+                  , aliasedTy
+                  ]
+          , declValue declIdentifier [] (exprIdent identity_)
+          ]
+      extractReferencedLabelNames aliasedTy
 
 tyVarToTypeVar :: TypeVarBinding Void -> Type Void
 tyVarToTypeVar = case _ of
