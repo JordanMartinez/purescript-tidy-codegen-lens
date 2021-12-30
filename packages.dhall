@@ -47,7 +47,7 @@ in  upstream
           , "unicode"
           ]
         , repo = "https://github.com/JordanMartinez/purescript-tidy-codegen.git"
-        , version = "fix-binderParens"
+        , version = "include-all-fixes"
         }
     with dodo-printer =
         { dependencies =
