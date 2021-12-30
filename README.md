@@ -80,5 +80,5 @@ Files were generated using the below commands, which are stored in [regen-snapsh
   snapshots/UseGlobalPropFile
 
 # Here's the primary example, showing the full power of the code
-./tidy-mklens snapshots/PrimaryExample.purs
+./tidy-mklens --gen-type-alias-lenses snapshots/PrimaryExample.purs
 ```

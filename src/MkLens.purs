@@ -30,7 +30,7 @@ import Node.Path as Path
 import Partial.Unsafe (unsafePartial)
 import PureScript.CST (RecoveredParserResult(..), parseModule)
 import PureScript.CST.Traversal (defaultMonoidalVisitor, foldMapModule)
-import PureScript.CST.Types (DataCtor(..), DataMembers(..), Declaration(..), FixityOp(..), Foreign(..), Import(..), ImportDecl(..), Label(..), Labeled(..), Module(..), ModuleBody(..), ModuleHeader(..), ModuleName, Name(..), Operator, Proper(..), QualifiedName(..), Row(..), Separated(..), Type(..), TypeVarBinding(..), Wrapped(..))
+import PureScript.CST.Types (DataCtor(..), DataMembers(..), Declaration(..), Export(..), FixityOp(..), Foreign(..), Import(..), ImportDecl(..), Label(..), Labeled(..), Module(..), ModuleBody(..), ModuleHeader(..), ModuleName, Name(..), Operator, Proper(..), QualifiedName(..), Row(..), Separated(..), Type(..), TypeVarBinding(..), Wrapped(..))
 import Safe.Coerce (coerce)
 import Tidy.Codegen (binderCtor, binderRecord, binderVar, caseBranch, declSignature, declValue, exprApp, exprCase, exprCtor, exprIdent, exprLambda, exprRecord, exprSection, exprTyped, printModule, typeApp, typeCtor, typeForall, typeRecord, typeString, typeVar)
 import Tidy.Codegen.Monad (Codegen, importClass, importCtor, importFrom, importOp, importOpen, importOpenHiding, importType, importTypeAll, importTypeOp, importValue, runCodegenTModule)
@@ -75,6 +75,29 @@ derive instance ordImportedTypeKey :: Ord ImportedTypeKey
 -- | ```
 type ImportedTypes = Map ImportedTypeKey ModuleName
 
+-- | Indicates the number of data constructors for a given type are exported.
+-- | While the CST permits one to export specific constructors,
+-- | one can only import all or 0 constructors.
+data DataCtorMembers
+  = DCMNone
+  -- If we ever re-allow the ability to import only some constructors from a type
+  -- then we should reuse this code
+  -- | DCMSome (NonEmptySet Proper)
+  | DCMAll
+
+derive instance eqDataCtorMembers :: Eq DataCtorMembers
+instance Semigroup DataCtorMembers where
+  append = case _, _ of
+    DCMAll, _ -> DCMAll
+    _, DCMAll -> DCMAll
+    -- If we ever re-allow the ability to import only some constructors from a type
+    -- then we should reuse this code
+    -- (DCMSome l) (DCMSome r) = DCMSome $ l <> r
+    -- _ r@(DCMSome _) = r
+    dcmNone, _ -> dcmNone
+
+type ExportedTypeMap = Map Proper DataCtorMembers
+
 -- | Uses a two-step pass to generate all lenses/prisms for a file
 -- | 1. Generate a lens/prism for a data type and newtype
 -- | 2. Generate a lens for each label referenced in the previous generated
@@ -89,7 +112,7 @@ generateLensModule options filePath = do
         modulePath = (unwrap sourceFileModName) <> ".Lens"
         Tuple labelNames generatedModule = runFree coerce $ unsafePartial $ runCodegenTModule modulePath do
           importOpenImports cst
-          labelNames <- traverse (genOptic options sourceFileModName (getImportedTypes cst)) $ extractDecls cst
+          labelNames <- traverse (genOptic options sourceFileModName (getExportMap cst) (getImportedTypes cst)) $ extractDecls cst
           let labelNameSet = foldl Set.union Set.empty labelNames
           unless (isJust options.genGlobalPropFile) do
             genLensProp labelNameSet
@@ -107,6 +130,35 @@ generateLensModule options filePath = do
         "Parsing module for file path failed. Could not generate lens file for path: '" <> filePath <> "'"
   where
   getSourceFileModuleName (Module { header: ModuleHeader { name: Name { name } } }) = name
+
+  getExportMap :: Module Void -> Maybe ExportedTypeMap
+  getExportMap (Module { header: ModuleHeader { exports }}) = map (foldl foldFn Map.empty <<< unWrappedSeparated) exports
+    where
+    foldFn :: ExportedTypeMap -> Export Void -> ExportedTypeMap
+    foldFn acc = case _ of
+      ExportType tyName members ->
+        Map.alter
+          case _ of
+            Nothing -> Just $ extractMembers members
+            Just dctors -> Just $ dctors <> extractMembers members
+          (unName tyName)
+          acc
+      _ -> acc
+
+    extractMembers :: Maybe DataMembers -> DataCtorMembers
+    extractMembers = maybe DCMNone case _ of
+      DataAll _ -> DCMAll
+      DataEnumerated (Wrapped { value }) ->
+        -- Previously, PureScript allowed you to export and import specific constructors.
+        -- However, importing specific constructors was later removed.
+        -- Thus, if one constructor was exported, the compiler will force all constructors
+        -- to be exported.
+        --
+        -- If we reallow only a few constructors to be imported again, then we should use this code:
+        -- value
+        --   # maybe DCMNone (unSeparated
+        --      >>> foldl (\acc next -> acc <> DCMAllDCMSome (NonEmptySet.singleton (unName next))) DCMNone)
+        maybe DCMNone (const DCMAll) value
 
   importOpenImports :: Partial => Module Void -> Codegen Void Unit
   importOpenImports (Module { header: ModuleHeader { imports }}) =
@@ -251,70 +303,93 @@ genOptic
   :: Partial
   => GenOptions
   -> ModuleName
+  -> Maybe ExportedTypeMap
   -> ImportedTypes
   -> DeclType
   -> Codegen Void (Set String)
-genOptic opt souceFileModName importMap = case _ of
-  DTData rec -> case rec.constructors of
-    -- This can never occur because `DeclData` case above only matches on `Just`
-    -- which means there is at least one data constructor.
-    [] ->
+genOptic opt souceFileModName exportMap importMap = case _ of
+  DTData rec -> case exportsFor (unName rec.tyName) of
+    -- Type wasn't exported
+    Nothing ->
       pure Set.empty
 
-    [ DataCtor { name: ctorName@(Name { name: Proper ctorNameStr }), fields } ] -> do
-      void $ importFrom souceFileModName $ importTypeAll $ unwrap $ unName rec.tyName
-      genLensProduct opt importMap rec.tyName ctorName rec.tyVars ctorNameStr fields
+    Just DCMNone ->
+      pure Set.empty
 
-    _ -> do
-      void $ importFrom souceFileModName $ importTypeAll $ unwrap $ unName rec.tyName
-      sets <- for rec.constructors \(DataCtor { name: ctorName@(Name { name: Proper ctorNameStr }), fields }) ->
-        genPrismSum opt importMap rec.tyName ctorName rec.tyVars ctorNameStr fields
-      pure $ foldl Set.union Set.empty sets
-
-  DTNewtype rec@{ tyName: Name { name: Proper tn } } -> do
-    tyLens' <- importFrom "Data.Lens" $ importType "Lens'"
-    lensNewtype <- importFrom "Data.Lens.Iso.Newtype" $ importValue "_Newtype"
-    void $ importFrom souceFileModName $ importType $ unwrap $ unName rec.tyName
-    genImportedType importMap rec.wrappedTy
-    let
-      declIdentifier = "_" <> tn
-    tell
-      [ declSignature declIdentifier
-          $ typeForall rec.tyVars
-          $ typeApp (typeCtor tyLens')
-              [ (typeApp (typeCtor rec.tyName) $ map tyVarToTypeVar rec.tyVars)
-              , rec.wrappedTy
-              ]
-      , declValue declIdentifier [] (exprIdent lensNewtype)
-      ]
-    case rec.wrappedTy of
-      TypeRecord (Wrapped { value: Row { labels: Just (Separated { head, tail }) } }) -> do
-        pure $ foldl (\acc next -> Set.insert (unLabel $ snd next) acc) (Set.singleton $ unLabel head) tail
-      _ ->
+    Just DCMAll -> case rec.constructors of
+      -- This can never occur because `DeclData` case above only matches on `Just`
+      -- which means there is at least one data constructor.
+      [] ->
         pure Set.empty
 
-  DTType rec@{ tyName: Name { name: Proper tn }, aliasedTy } -> do
-    when opt.genTypeAliasLens do
-      identity_ <- importFrom "Prelude" $ importValue "identity"
+      [ DataCtor { name: ctorName@(Name { name: (Proper ctorNameStr) }), fields } ] -> do
+        void $ importFrom souceFileModName $ importTypeAll $ unwrap $ unName rec.tyName
+        genLensProduct opt importMap rec.tyName ctorName rec.tyVars ctorNameStr fields
+
+      _ -> do
+        void $ importFrom souceFileModName $ importTypeAll (unwrap $ unName rec.tyName)
+        sets <- for rec.constructors \(DataCtor { name: ctorName@(Name { name: Proper ctorNameStr }), fields }) ->
+          genPrismSum opt importMap rec.tyName ctorName rec.tyVars ctorNameStr fields
+        pure $ foldl Set.union Set.empty sets
+
+  DTNewtype rec -> case exportsFor (unName rec.tyName) of
+    Nothing -> pure Set.empty
+    Just DCMNone -> pure Set.empty
+    Just DCMAll -> do
       tyLens' <- importFrom "Data.Lens" $ importType "Lens'"
+      lensNewtype <- importFrom "Data.Lens.Iso.Newtype" $ importValue "_Newtype"
       void $ importFrom souceFileModName $ importType $ unwrap $ unName rec.tyName
-      genImportedType importMap aliasedTy
+      genImportedType importMap rec.wrappedTy
       let
-        declIdentifier = "_" <> tn
+        declIdentifier = "_" <> (unwrap $ unName rec.tyName)
       tell
         [ declSignature declIdentifier
             $ typeForall rec.tyVars
             $ typeApp (typeCtor tyLens')
                 [ (typeApp (typeCtor rec.tyName) $ map tyVarToTypeVar rec.tyVars)
-                , rec.aliasedTy
+                , rec.wrappedTy
                 ]
-        , declValue declIdentifier [] (exprIdent identity_)
+        , declValue declIdentifier [] (exprIdent lensNewtype)
         ]
-    case aliasedTy of
-      TypeRecord (Wrapped { value: Row { labels: Just (Separated { head, tail }) } }) -> do
-        pure $ foldl (\acc next -> Set.insert (unLabel $ snd next) acc) (Set.singleton $ unLabel head) tail
-      _ ->
+      case rec.wrappedTy of
+        TypeRecord (Wrapped { value: Row { labels: Just (Separated { head, tail }) } }) -> do
+          pure $ foldl (\acc next -> Set.insert (unLabel $ snd next) acc) (Set.singleton $ unLabel head) tail
+        _ ->
+          pure Set.empty
+
+  DTType rec@{ tyName: Name { name: Proper tn }, aliasedTy } -> do
+    case exportsFor (unName rec.tyName) of
+      Nothing ->
         pure Set.empty
+
+      -- type aliases won't have any exported members
+      Just _ -> do
+        when opt.genTypeAliasLens do
+          identity_ <- importFrom "Prelude" $ importValue "identity"
+          tyLens' <- importFrom "Data.Lens" $ importType "Lens'"
+          void $ importFrom souceFileModName $ importType $ unwrap $ unName rec.tyName
+          genImportedType importMap aliasedTy
+          let
+            declIdentifier = "_" <> tn
+          tell
+            [ declSignature declIdentifier
+                $ typeForall rec.tyVars
+                $ typeApp (typeCtor tyLens')
+                    [ (typeApp (typeCtor rec.tyName) $ map tyVarToTypeVar rec.tyVars)
+                    , rec.aliasedTy
+                    ]
+            , declValue declIdentifier [] (exprIdent identity_)
+            ]
+
+        case aliasedTy of
+          TypeRecord (Wrapped { value: Row { labels: Just (Separated { head, tail }) } }) -> do
+            pure $ foldl (\acc next -> Set.insert (unLabel $ snd next) acc) (Set.singleton $ unLabel head) tail
+          _ ->
+            pure Set.empty
+  where
+    exportsFor ty = case exportMap of
+      Nothing -> Just DCMAll
+      Just exports -> Map.lookup ty exports
 
 tyVarToTypeVar :: TypeVarBinding Void -> Type Void
 tyVarToTypeVar = case _ of

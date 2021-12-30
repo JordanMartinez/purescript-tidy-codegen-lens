@@ -14,4 +14,4 @@
   --global-record-lens-module Snapshots.UseGlobalPropFile.GlobalRecordLens \
   snapshots/UseGlobalPropFile
 
-./tidy-mklens snapshots/PrimaryExample.purs
+./tidy-mklens --gen-type-alias-lenses snapshots/PrimaryExample.purs

@@ -14,12 +14,12 @@ import Data.Lens.Lens (lens)
 import Data.Lens.Prism (Prism', prism)
 import Data.Lens.Record (prop)
 import Data.Tuple (Tuple(..))
-import Prelude (Unit, const, unit)
+import Prelude (Unit, const, identity, unit)
 import Snapshots.Imports.ImportedExplicitTypesNoModuleAlias (MyAlias, MyData, MyNewtype)
 import Snapshots.Imports.ImportedExplicitTypesWithModuleAlias as Shared
 import Snapshots.Imports.ModuleAliasOnly as Q
 import Snapshots.Imports.SharedModuleAlias as Shared
-import Snapshots.PrimaryExample (AliasDefinedInSourceFile, FfiTypeDefinedInSourceFile, NewtypeDefinedInSourceFile, NewtypedRecord, NewtypedType, Record_ImportedTypesAreReimported, DataDefinedInSourceFile(..), Data_NoTyVars_Args0(..), Data_NoTyVars_Args1(..), Data_NoTyVars_Args2(..), Data_NoTyVars_Args3(..), Data_NoTyVars_Sum_Args0(..), Data_NoTyVars_Sum_Args1(..), Data_NoTyVars_Sum_Args2(..), Data_NoTyVars_Sum_Args3(..), Data_Product_ImportedTypesAreReimported(..), Data_Sum_ImportedTypesAreReimported(..), Data_TyVars_Args0(..), Data_TyVars_Args1(..), Data_TyVars_Args2(..), Data_TyVars_Args3(..), Data_TyVars_Sum_Args0(..), Data_TyVars_Sum_Args1(..), Data_TyVars_Sum_Args2(..), Data_TyVars_Sum_Args3(..), EnsureSharedImportIsUsed(..))
+import Snapshots.PrimaryExample (AliasDefinedInSourceFile, FfiTypeDefinedInSourceFile, NewtypeDefinedInSourceFile, Newtype_TypeExported_CtorExported_All, Newtype_TypeExported_CtorExported_ByName, NewtypedRecord, NewtypedType, Record_ImportedTypesAreReimported, TypeAlias_Record, TypeAlias_Type, TypeAlias_TypeExported, DataDefinedInSourceFile(..), Data_NoTyVars_Args0(..), Data_NoTyVars_Args1(..), Data_NoTyVars_Args2(..), Data_NoTyVars_Args3(..), Data_NoTyVars_Sum_Args0(..), Data_NoTyVars_Sum_Args1(..), Data_NoTyVars_Sum_Args2(..), Data_NoTyVars_Sum_Args3(..), Data_Product_ImportedTypesAreReimported(..), Data_Sum_ImportedTypesAreReimported(..), Data_TyVars_Args0(..), Data_TyVars_Args1(..), Data_TyVars_Args2(..), Data_TyVars_Args3(..), Data_TyVars_Sum_Args0(..), Data_TyVars_Sum_Args1(..), Data_TyVars_Sum_Args2(..), Data_TyVars_Sum_Args3(..), Data_TypeExported_CtorExported_Product_All(..), Data_TypeExported_CtorExported_Sum_All(..), EnsureSharedImportIsUsed(..))
 import Type.Proxy (Proxy(..))
 
 _Data_NoTyVars_Args0 :: Lens' Data_NoTyVars_Args0 Unit
@@ -138,6 +138,16 @@ _Data_TyVars_Sum_Args3_Ignored = prism (const Data_TyVars_Sum_Args3_Ignored) cas
   Data_TyVars_Sum_Args3_Ignored -> Right unit
   other -> Left other
 
+_TypeAlias_Record :: Lens' TypeAlias_Record
+  { foo :: Int
+  , bar :: String
+  , baz :: Boolean
+  }
+_TypeAlias_Record = identity
+
+_TypeAlias_Type :: Lens' TypeAlias_Type String
+_TypeAlias_Type = identity
+
 _NewtypedRecord :: Lens' NewtypedRecord
   { first :: String
   , second :: String
@@ -152,6 +162,9 @@ _DataDefinedInSourceFile = lens (const unit) (const DataDefinedInSourceFile)
 
 _NewtypeDefinedInSourceFile :: Lens' NewtypeDefinedInSourceFile Int
 _NewtypeDefinedInSourceFile = _Newtype
+
+_AliasDefinedInSourceFile :: Lens' AliasDefinedInSourceFile Int
+_AliasDefinedInSourceFile = identity
 
 _Data_Product_ImportedTypesAreReimported :: Lens' Data_Product_ImportedTypesAreReimported
   { arg1 ::
@@ -274,6 +287,32 @@ _Record_ImportedTypesAreReimported :: Lens' Record_ImportedTypesAreReimported
       }
   }
 _Record_ImportedTypesAreReimported = _Newtype
+
+_Data_TypeExported_CtorExported_Product_All :: Lens' Data_TypeExported_CtorExported_Product_All
+  Unit
+_Data_TypeExported_CtorExported_Product_All = lens (const unit)
+  (const Data_TypeExported_CtorExported_Product_All)
+
+_Data_TypeExported_CtorExported_Sum_All_1 :: Prism' Data_TypeExported_CtorExported_Sum_All Unit
+_Data_TypeExported_CtorExported_Sum_All_1 = prism (const Data_TypeExported_CtorExported_Sum_All_1)
+  case _ of
+    Data_TypeExported_CtorExported_Sum_All_1 -> Right unit
+    other -> Left other
+
+_Data_TypeExported_CtorExported_Sum_All_2 :: Prism' Data_TypeExported_CtorExported_Sum_All Unit
+_Data_TypeExported_CtorExported_Sum_All_2 = prism (const Data_TypeExported_CtorExported_Sum_All_2)
+  case _ of
+    Data_TypeExported_CtorExported_Sum_All_2 -> Right unit
+    other -> Left other
+
+_TypeAlias_TypeExported :: Lens' TypeAlias_TypeExported Int
+_TypeAlias_TypeExported = identity
+
+_Newtype_TypeExported_CtorExported_All :: Lens' Newtype_TypeExported_CtorExported_All Int
+_Newtype_TypeExported_CtorExported_All = _Newtype
+
+_Newtype_TypeExported_CtorExported_ByName :: Lens' Newtype_TypeExported_CtorExported_ByName Int
+_Newtype_TypeExported_CtorExported_ByName = _Newtype
 
 _EnsureSharedImportIsUsed :: Lens' EnsureSharedImportIsUsed
   { arg1 ::

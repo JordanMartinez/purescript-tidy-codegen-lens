@@ -1,4 +1,45 @@
-module Snapshots.PrimaryExample where
+module Snapshots.PrimaryExample
+  ( AliasDefinedInSourceFile
+  , DataDefinedInSourceFile(..)
+  , Data_NoTyVars_Args0(..)
+  , Data_NoTyVars_Args1(..)
+  , Data_NoTyVars_Args2(..)
+  , Data_NoTyVars_Args3(..)
+  , Data_NoTyVars_Sum_Args0(..)
+  , Data_NoTyVars_Sum_Args1(..)
+  , Data_NoTyVars_Sum_Args2(..)
+  , Data_NoTyVars_Sum_Args3(..)
+  , Data_Product_ImportedTypesAreReimported(..)
+  , Data_Sum_ImportedTypesAreReimported(..)
+  , Data_TyVars_Args0(..)
+  , Data_TyVars_Args1(..)
+  , Data_TyVars_Args2(..)
+  , Data_TyVars_Args3(..)
+  , Data_TyVars_Sum_Args0(..)
+  , Data_TyVars_Sum_Args1(..)
+  , Data_TyVars_Sum_Args2(..)
+  , Data_TyVars_Sum_Args3(..)
+  , Data_TypeExported_CtorExported_Product_All(..)
+  , Data_TypeExported_CtorExported_Sum_All(..)
+  -- , Data_TypeNotExported(..)
+  , Data_TypeOnlyExported
+  , EnsureSharedImportIsUsed(..)
+  , FfiTypeDefinedInSourceFile
+  , NewtypeDefinedInSourceFile(..)
+  , Newtype_TypeExported_CtorExported_All(..)
+  , Newtype_TypeExported_CtorExported_ByName(Newtype_TypeExported_CtorExported_ByName)
+  -- , Newtype_TypeNotExported(..)
+  , Newtype_TypeOnlyExported
+  , NewtypedRecord(..)
+  , NewtypedType(..)
+  , Record_ImportedTypesAreReimported(..)
+  , TypeAlias_Record
+  , TypeAlias_Type
+  , TypeAlias_TypeExported
+  -- , TypeAlias_TypeNotExported
+  , usePrelude
+  )
+  where
 
 import Prelude
 
@@ -125,6 +166,26 @@ newtype Record_ImportedTypesAreReimported = Record_ImportedTypesAreReimported
       , myFfi :: FfiTypeDefinedInSourceFile
       }
   }
+
+data Data_TypeNotExported = Data_TypeNotExported
+data Data_TypeOnlyExported = Data_TypeOnlyExported
+data Data_TypeExported_CtorExported_Product_All = Data_TypeExported_CtorExported_Product_All
+data Data_TypeExported_CtorExported_Product_ByName = Data_TypeExported_CtorExported_Product_ByName
+data Data_TypeExported_CtorExported_Sum_All
+  = Data_TypeExported_CtorExported_Sum_All_1
+  | Data_TypeExported_CtorExported_Sum_All_2
+
+data Data_TypeExported_CtorExported_Sum_ByName
+  = Data_TypeExported_CtorExported_Sum_ByName_Exported
+  | Data_TypeExported_CtorExported_Sum_ByName_NotExpored
+
+type TypeAlias_TypeNotExported = Int
+type TypeAlias_TypeExported = Int
+
+newtype Newtype_TypeNotExported = Newtype_TypeNotExported Int
+newtype Newtype_TypeOnlyExported = Newtype_TypeOnlyExported Int
+newtype Newtype_TypeExported_CtorExported_All = Newtype_TypeExported_CtorExported_All Int
+newtype Newtype_TypeExported_CtorExported_ByName = Newtype_TypeExported_CtorExported_ByName Int
 
 data EnsureSharedImportIsUsed =
   EnsureSharedImportIsUsed
