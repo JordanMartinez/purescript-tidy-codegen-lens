@@ -132,8 +132,8 @@ generateLensModule options filePath = do
                 -- So, we'll work around it by just importing it open
                 -- since nothing is being hidden.
                 importOpen (unName r.module)
-              Just (Separated { head, tail }) ->
-                for_ (Array.cons head $ map snd tail) \nameProper ->
+              Just sep ->
+                for_ (unSeparate sep) \nameProper ->
                   importOpenHiding (unName r.module)
                     $ importCtor (unwrap $ unName tyName)
                     $ qualify q $ unwrap $ unName nameProper
@@ -237,8 +237,8 @@ extractDecls cst = foldMapModule visitor cst
   where
   visitor = defaultMonoidalVisitor
     { onDecl = case _ of
-        DeclData ({ name, vars }) (Just (Tuple _ (Separated { head, tail }))) -> do
-          Array.singleton $ DTData { tyName: name, tyVars: vars, constructors: Array.cons head $ map snd tail }
+        DeclData ({ name, vars }) (Just (Tuple _ sep)) -> do
+          Array.singleton $ DTData { tyName: name, tyVars: vars, constructors: unSeparate sep }
         DeclNewtype ({ name, vars }) _ _ ty -> do
           Array.singleton $ DTNewtype { tyName: name, tyVars: vars, wrappedTy: ty }
         DeclType ({ name, vars }) _ ty -> do
@@ -362,8 +362,8 @@ genImportedType importMap = go
     TypeError a -> absurd a
 
   goRow (Row r) = do
-    for_ r.labels \(Separated { head, tail }) -> do
-      for_ (Array.cons head $ map snd tail) \(Labeled { value }) -> do
+    for_ r.labels \sep -> do
+      for_ (unSeparate sep) \(Labeled { value }) -> do
         go value
     for_ r.tail \(Tuple _ ty) -> go ty
 
