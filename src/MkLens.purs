@@ -133,7 +133,7 @@ generateLensModule options filePath = do
                 -- since nothing is being hidden.
                 importOpen (unName r.module)
               Just sep ->
-                for_ (unSeparate sep) \nameProper ->
+                for_ (unSeparated sep) \nameProper ->
                   importOpenHiding (unName r.module)
                     $ importCtor (unwrap $ unName tyName)
                     $ qualify q $ unwrap $ unName nameProper
@@ -238,7 +238,7 @@ extractDecls cst = foldMapModule visitor cst
   visitor = defaultMonoidalVisitor
     { onDecl = case _ of
         DeclData ({ name, vars }) (Just (Tuple _ sep)) -> do
-          Array.singleton $ DTData { tyName: name, tyVars: vars, constructors: unSeparate sep }
+          Array.singleton $ DTData { tyName: name, tyVars: vars, constructors: unSeparated sep }
         DeclNewtype ({ name, vars }) _ _ ty -> do
           Array.singleton $ DTNewtype { tyName: name, tyVars: vars, wrappedTy: ty }
         DeclType ({ name, vars }) _ ty -> do
@@ -363,7 +363,7 @@ genImportedType importMap = go
 
   goRow (Row r) = do
     for_ r.labels \sep -> do
-      for_ (unSeparate sep) \(Labeled { value }) -> do
+      for_ (unSeparated sep) \(Labeled { value }) -> do
         go value
     for_ r.tail \(Tuple _ ty) -> go ty
 
@@ -768,10 +768,10 @@ fieldLabels fields = case _ of
       { recordTy, varNames }
 
 unWrappedSeparated :: forall a. Wrapped (Separated a) -> Array a
-unWrappedSeparated (Wrapped { value }) = unSeparate value
+unWrappedSeparated (Wrapped { value }) = unSeparated value
 
-unSeparate :: forall a. Separated a -> Array a
-unSeparate (Separated { head, tail }) = Array.cons head $ map snd tail
+unSeparated :: forall a. Separated a -> Array a
+unSeparated (Separated { head, tail }) = Array.cons head $ map snd tail
 
 unLabel :: forall a. Labeled (Name Label) a -> String
 unLabel (Labeled { label: Name { name: Label label } }) = label
