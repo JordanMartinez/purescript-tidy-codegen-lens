@@ -211,11 +211,6 @@ generateLensModule options filePath = do
             ImportTypeOp _ opName -> Map.insert (TypeOperator possibleModAlias (unName opName)) (unName r.module) accum
             _ -> acc
 
-  unWrappedSeparated :: forall a. Wrapped (Separated a) -> Array a
-  unWrappedSeparated (Wrapped { value }) = unSeparate value
-
-  unSeparate :: forall a. Separated a -> Array a
-  unSeparate (Separated { head, tail }) = Array.cons head $ map snd tail
 
 hasDecls :: Module Void -> Boolean
 hasDecls (Module { body: ModuleBody { decls } }) = not $ Array.null decls
@@ -319,12 +314,6 @@ genOptic opt souceFileModName importMap = case _ of
         pure $ foldl (\acc next -> Set.insert (unLabel $ snd next) acc) (Set.singleton $ unLabel head) tail
       _ ->
         pure Set.empty
-
-unLabel :: forall a. Labeled (Name Label) a -> String
-unLabel (Labeled { label: Name { name: Label label } }) = label
-
-unName :: forall a. Name a -> a
-unName (Name { name }) = name
 
 tyVarToTypeVar :: TypeVarBinding Void -> Type Void
 tyVarToTypeVar = case _ of
@@ -777,3 +766,15 @@ fieldLabels fields = case _ of
     foldlFn f = do
       let { recordTy, varNames } = foldl f initial fields
       { recordTy, varNames }
+
+unWrappedSeparated :: forall a. Wrapped (Separated a) -> Array a
+unWrappedSeparated (Wrapped { value }) = unSeparate value
+
+unSeparate :: forall a. Separated a -> Array a
+unSeparate (Separated { head, tail }) = Array.cons head $ map snd tail
+
+unLabel :: forall a. Labeled (Name Label) a -> String
+unLabel (Labeled { label: Name { name: Label label } }) = label
+
+unName :: forall a. Name a -> a
+unName (Name { name }) = name
