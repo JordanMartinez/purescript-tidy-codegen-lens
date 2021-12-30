@@ -30,10 +30,10 @@ import Node.Path as Path
 import Partial.Unsafe (unsafePartial)
 import PureScript.CST (RecoveredParserResult(..), parseModule)
 import PureScript.CST.Traversal (defaultMonoidalVisitor, foldMapModule)
-import PureScript.CST.Types (DataCtor(..), Declaration(..), FixityOp(..), Foreign(..), Import(..), ImportDecl(..), Label(..), Labeled(..), Module(..), ModuleBody(..), ModuleHeader(..), ModuleName, Name(..), Operator, Proper(..), QualifiedName(..), Row(..), Separated(..), Type(..), TypeVarBinding(..), Wrapped(..))
+import PureScript.CST.Types (DataCtor(..), DataMembers(..), Declaration(..), FixityOp(..), Foreign(..), Import(..), ImportDecl(..), Label(..), Labeled(..), Module(..), ModuleBody(..), ModuleHeader(..), ModuleName, Name(..), Operator, Proper(..), QualifiedName(..), Row(..), Separated(..), Type(..), TypeVarBinding(..), Wrapped(..))
 import Safe.Coerce (coerce)
 import Tidy.Codegen (binderCtor, binderRecord, binderVar, caseBranch, declSignature, declValue, exprApp, exprCase, exprCtor, exprIdent, exprLambda, exprRecord, exprSection, exprTyped, printModule, typeApp, typeCtor, typeForall, typeRecord, typeString, typeVar)
-import Tidy.Codegen.Monad (Codegen, importCtor, importFrom, importOpen, importType, importTypeAll, importTypeOp, importValue, runCodegenTModule)
+import Tidy.Codegen.Monad (Codegen, importClass, importCtor, importFrom, importOp, importOpen, importOpenHiding, importType, importTypeAll, importTypeOp, importValue, runCodegenTModule)
 import Types (RecordLabelStyle(..))
 
 type GenOptions =
@@ -108,17 +108,49 @@ generateLensModule options filePath = do
   where
   getSourceFileModuleName (Module { header: ModuleHeader { name: Name { name } } }) = name
 
-  importOpenImports :: Module Void -> Codegen Void Unit
+  importOpenImports :: Partial => Module Void -> Codegen Void Unit
   importOpenImports (Module { header: ModuleHeader { imports }}) =
     for_ imports case _ of
       ImportDecl r@{ names: Nothing, qualified: Nothing } -> do
         importOpen $ unName r.module
-      ImportDecl _r@{ names: Just (Tuple (Just _hidingKeyword) _members), qualified: Nothing } -> do
-        -- BUG: Unaliased open imports with hidden members cannot be generated yet
-        -- Pending PR to `purescript-tidy-codegen`
-        pure unit
-      _ ->
-        pure unit
+      ImportDecl r@{ names: Just (Tuple (Just _hidingKeyword) _members), qualified: q } -> do
+        for_ (extractNames _members) case _ of
+          ImportValue impName ->
+            importOpenHiding (unName r.module) $ importValue $ qualify q $ unwrap $ unName impName
+          ImportOp opName -> do
+            importOpenHiding (unName r.module) $ importOp $ qualify q $ unwrap $ unName opName
+          ImportType tyName Nothing ->
+            importOpenHiding (unName r.module) $ importType $ qualify q $ unwrap $ unName tyName
+          ImportType tyName (Just (DataAll _)) -> do
+            importOpenHiding (unName r.module) $ importTypeAll $ qualify q $ unwrap $ unName tyName
+          ImportType tyName (Just (DataEnumerated (Wrapped { value }))) ->
+            case value of
+              Nothing ->
+                -- I believe this is...
+                --    import Foo hiding ()
+                -- which gets me a parser error when I tried it on Try PureScript
+                -- So, we'll work around it by just importing it open
+                -- since nothing is being hidden.
+                importOpen (unName r.module)
+              Just (Separated { head, tail }) ->
+                for_ (Array.cons head $ map snd tail) \nameProper ->
+                  importOpenHiding (unName r.module)
+                    $ importCtor (unwrap $ unName tyName)
+                    $ qualify q $ unwrap $ unName nameProper
+          ImportTypeOp _ opName ->
+            importOpenHiding (unName r.module) $ importTypeOp $ qualify q $ unwrap $ unName opName
+          ImportClass _ className ->
+            importOpenHiding (unName r.module) $ importClass $ qualify q $ unwrap $ unName className
+          ImportKind _ _ ->
+            -- kinds cannot be imported, and this will be deprecated anyways
+            pure unit
+          ImportError e ->
+            absurd e
+        where
+          -- The only way to force tidy-codegen to import declarations in a qualified matter
+          -- is to use `Qualifier.import`
+          qualify qualified s =
+            (maybe "" (flip append "." <<< unwrap <<< unName) $ map snd qualified) <> s
 
   getImportedTypes :: Module Void -> ImportedTypes
   getImportedTypes
@@ -179,7 +211,7 @@ generateLensModule options filePath = do
             ImportTypeOp _ opName -> Map.insert (TypeOperator possibleModAlias (unName opName)) (unName r.module) accum
             _ -> acc
 
-    extractNames (Wrapped { value: Separated { head, tail } }) = Array.cons head $ map snd tail
+  extractNames (Wrapped { value: Separated { head, tail } }) = Array.cons head $ map snd tail
 
 hasDecls :: Module Void -> Boolean
 hasDecls (Module { body: ModuleBody { decls } }) = not $ Array.null decls

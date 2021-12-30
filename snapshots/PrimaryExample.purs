@@ -2,6 +2,10 @@ module Snapshots.PrimaryExample where
 
 import Prelude
 
+import Prim.Row hiding (class Cons)
+import Prim hiding (Char)
+import Prim.Boolean hiding (True) as PB
+
 import Snapshots.Imports.ImportedExplicitTypesNoModuleAlias (MyAlias, MyData, MyNewtype)
 import Snapshots.Imports.ImportedExplicitTypesWithModuleAlias (MyData, MyNewtype, MyAlias) as Shared
 import Snapshots.Imports.ModuleAliasOnly as Q

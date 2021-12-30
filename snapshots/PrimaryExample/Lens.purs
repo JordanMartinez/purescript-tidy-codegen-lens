@@ -2,6 +2,11 @@ module Snapshots.PrimaryExample.Lens where
 
 import Prelude
 
+import Prim hiding (Char)
+import Prim.Row hiding (class Cons)
+
+import Prim.Boolean hiding (True) as PB
+
 import Data.Either (Either(..))
 import Data.Lens (Lens')
 import Data.Lens.Iso.Newtype (_Newtype)
