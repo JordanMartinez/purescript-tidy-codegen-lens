@@ -2,7 +2,7 @@ module Snapshots.UseArgLabelStyle.Lens where
 
 import Data.Either (Either(..))
 import Data.Lens (Lens')
-import Data.Lens.Lens (lens)
+import Data.Lens.Iso (iso)
 import Data.Lens.Prism (Prism', prism)
 import Data.Lens.Record (prop)
 import Prelude (Unit, const, unit)
@@ -13,7 +13,7 @@ _Product
   :: forall a b c d e f g h
    . Lens' (Product a b c d e f g h)
        { arg1 :: a, arg2 :: b, arg3 :: c, arg4 :: d, arg5 :: e, arg6 :: f, arg7 :: g, arg8 :: h }
-_Product = lens
+_Product = iso
   ( \(Product arg1 arg2 arg3 arg4 arg5 arg6 arg7 arg8) ->
       { arg1: arg1
       , arg2: arg2

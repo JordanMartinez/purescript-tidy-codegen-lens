@@ -9,8 +9,8 @@ import Prim.Boolean hiding (True) as PB
 
 import Data.Either (Either(..))
 import Data.Lens (Lens')
+import Data.Lens.Iso (iso)
 import Data.Lens.Iso.Newtype (_Newtype)
-import Data.Lens.Lens (lens)
 import Data.Lens.Prism (Prism', prism)
 import Data.Lens.Record (prop)
 import Data.Tuple (Tuple(..))
@@ -23,34 +23,34 @@ import Snapshots.PrimaryExample (AliasDefinedInSourceFile, FfiTypeDefinedInSourc
 import Type.Proxy (Proxy(..))
 
 _Data_NoTyVars_Args0 :: Lens' Data_NoTyVars_Args0 Unit
-_Data_NoTyVars_Args0 = lens (const unit) (const Data_NoTyVars_Args0)
+_Data_NoTyVars_Args0 = iso (const unit) (const Data_NoTyVars_Args0)
 
 _Data_NoTyVars_Args1 :: Lens' Data_NoTyVars_Args1 Int
-_Data_NoTyVars_Args1 = lens (\(Data_NoTyVars_Args1 a) -> a) Data_NoTyVars_Args1
+_Data_NoTyVars_Args1 = iso (\(Data_NoTyVars_Args1 a) -> a) Data_NoTyVars_Args1
 
 _Data_NoTyVars_Args2 :: Lens' Data_NoTyVars_Args2 (Tuple Int String)
-_Data_NoTyVars_Args2 = lens (\(Data_NoTyVars_Args2 a b) -> Tuple a b) \(Tuple a b) ->
+_Data_NoTyVars_Args2 = iso (\(Data_NoTyVars_Args2 a b) -> Tuple a b) \(Tuple a b) ->
   Data_NoTyVars_Args2 a b
 
 _Data_NoTyVars_Args3 :: Lens' Data_NoTyVars_Args3 { arg1 :: Int, arg2 :: String, arg3 :: Boolean }
-_Data_NoTyVars_Args3 = lens
+_Data_NoTyVars_Args3 = iso
   (\(Data_NoTyVars_Args3 arg1 arg2 arg3) -> { arg1: arg1, arg2: arg2, arg3: arg3 })
   \{ arg1, arg2, arg3 } -> Data_NoTyVars_Args3 arg1 arg2 arg3
 
 _Data_TyVars_Args0 :: forall a b c d. Lens' (Data_TyVars_Args0 a b c d) Unit
-_Data_TyVars_Args0 = lens (const unit) (const Data_TyVars_Args0)
+_Data_TyVars_Args0 = iso (const unit) (const Data_TyVars_Args0)
 
 _Data_TyVars_Args1 :: forall a b c d. Lens' (Data_TyVars_Args1 a b c d) a
-_Data_TyVars_Args1 = lens (\(Data_TyVars_Args1 a) -> a) Data_TyVars_Args1
+_Data_TyVars_Args1 = iso (\(Data_TyVars_Args1 a) -> a) Data_TyVars_Args1
 
 _Data_TyVars_Args2 :: forall a b c d. Lens' (Data_TyVars_Args2 a b c d) (Tuple a b)
-_Data_TyVars_Args2 = lens (\(Data_TyVars_Args2 a b) -> Tuple a b) \(Tuple a b) -> Data_TyVars_Args2
+_Data_TyVars_Args2 = iso (\(Data_TyVars_Args2 a b) -> Tuple a b) \(Tuple a b) -> Data_TyVars_Args2
   a
   b
 
 _Data_TyVars_Args3
   :: forall a b c d. Lens' (Data_TyVars_Args3 a b c d) { arg1 :: a, arg2 :: b, arg3 :: c }
-_Data_TyVars_Args3 = lens
+_Data_TyVars_Args3 = iso
   (\(Data_TyVars_Args3 arg1 arg2 arg3) -> { arg1: arg1, arg2: arg2, arg3: arg3 })
   \{ arg1, arg2, arg3 } -> Data_TyVars_Args3 arg1 arg2 arg3
 
@@ -143,7 +143,7 @@ _Data_Wrapping_Record
    . Lens' (Data_Wrapping_Record a b c)
        { recordFieldReferencedInExportedData :: a
        }
-_Data_Wrapping_Record = lens (\(Data_Wrapping_Record a) -> a) Data_Wrapping_Record
+_Data_Wrapping_Record = iso (\(Data_Wrapping_Record a) -> a) Data_Wrapping_Record
 
 _TypeAlias_Record :: Lens' TypeAlias_Record
   { recordFieldReferencedInExportedTypeAlias :: Int
@@ -165,7 +165,7 @@ _NewtypedType :: Lens' NewtypedType Int
 _NewtypedType = _Newtype
 
 _DataDefinedInSourceFile :: Lens' DataDefinedInSourceFile Unit
-_DataDefinedInSourceFile = lens (const unit) (const DataDefinedInSourceFile)
+_DataDefinedInSourceFile = iso (const unit) (const DataDefinedInSourceFile)
 
 _NewtypeDefinedInSourceFile :: Lens' NewtypeDefinedInSourceFile Int
 _NewtypeDefinedInSourceFile = _Newtype
@@ -192,7 +192,7 @@ _Data_Product_ImportedTypesAreReimported :: Lens' Data_Product_ImportedTypesAreR
   , arg12 :: AliasDefinedInSourceFile
   , arg13 :: FfiTypeDefinedInSourceFile
   }
-_Data_Product_ImportedTypesAreReimported = lens
+_Data_Product_ImportedTypesAreReimported = iso
   ( \( Data_Product_ImportedTypesAreReimported arg1 arg2 arg3 arg4 arg5 arg6 arg7 arg8 arg9 arg10
          arg11
          arg12
@@ -297,7 +297,7 @@ _Record_ImportedTypesAreReimported = _Newtype
 
 _Data_TypeExported_CtorExported_Product_All :: Lens' Data_TypeExported_CtorExported_Product_All
   Unit
-_Data_TypeExported_CtorExported_Product_All = lens (const unit)
+_Data_TypeExported_CtorExported_Product_All = iso (const unit)
   (const Data_TypeExported_CtorExported_Product_All)
 
 _Data_TypeExported_CtorExported_Sum_All_1 :: Prism' Data_TypeExported_CtorExported_Sum_All Unit
@@ -327,7 +327,7 @@ _EnsureSharedImportIsUsed :: Lens' EnsureSharedImportIsUsed
   , arg2 :: (Shared.SharedMyAlias String)
   , arg3 :: (Shared.SharedMyNewtype Int Int Int)
   }
-_EnsureSharedImportIsUsed = lens
+_EnsureSharedImportIsUsed = iso
   ( \(EnsureSharedImportIsUsed arg1 arg2 arg3) -> { arg1: arg1, arg2: arg2, arg3: arg3 }
   )
   \{ arg1, arg2, arg3 } ->

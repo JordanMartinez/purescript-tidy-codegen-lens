@@ -492,7 +492,7 @@ genLensProduct
   -> Codegen Void (Set String)
 genLensProduct opt importMap tyName ctorName tyVars ctorNameStr fields = do
   tyLens' <- importFrom "Data.Lens" $ importType "Lens'"
-  lens <- importFrom "Data.Lens.Lens" $ importValue "lens"
+  iso <- importFrom "Data.Lens.Iso" $ importValue "iso"
   traverse_ (genImportedType importMap) fields
   let
     declIdentifier = "_" <> ctorNameStr
@@ -516,7 +516,7 @@ genLensProduct opt importMap tyName ctorName tyVars ctorNameStr fields = do
                 , typeCtor prelude.unitType
                 ]
         , declValue declIdentifier [] do
-            exprApp (exprIdent lens)
+            exprApp (exprIdent iso)
               [ exprApp (exprIdent prelude.const_) [ exprIdent prelude.unit_ ]
               , exprApp (exprIdent prelude.const_) [ exprCtor ctorName ]
               ]
@@ -536,7 +536,7 @@ genLensProduct opt importMap tyName ctorName tyVars ctorNameStr fields = do
                 , ty1
                 ]
         , declValue declIdentifier [] do
-            exprApp (exprIdent lens)
+            exprApp (exprIdent iso)
               [ exprLambda [ binderCtor ctorName [ binderVar "a" ] ] (exprIdent "a")
               , exprCtor ctorName
               ]
@@ -561,7 +561,7 @@ genLensProduct opt importMap tyName ctorName tyVars ctorNameStr fields = do
                 , typeApp (typeCtor tupleRec.ty) [ ty1, ty2 ]
                 ]
         , declValue declIdentifier [] do
-            exprApp (exprIdent lens)
+            exprApp (exprIdent iso)
               [ exprLambda [ binderCtor ctorName [ binderVar "a", binderVar "b" ] ]
                   (exprApp (exprCtor tupleRec.ctor) [ exprIdent "a", exprIdent "b" ])
               , exprLambda [ binderCtor tupleRec.ctor [ binderVar "a", binderVar "b" ] ]
@@ -591,7 +591,7 @@ genLensProduct opt importMap tyName ctorName tyVars ctorNameStr fields = do
                 , typeRecord recordTy Nothing
                 ]
         , declValue declIdentifier [] do
-            exprApp (exprIdent lens)
+            exprApp (exprIdent iso)
               [ exprLambda [ binderCtor ctorName $ map binderVar varNames ]
                   (exprRecord $ map (\var -> Tuple var (exprIdent var)) varNames)
               , exprLambda [ binderRecord varNames ]
