@@ -79,7 +79,7 @@ type CliArgs =
   }
 
 versionStr :: String
-versionStr = "v1.0.0"
+versionStr = "v0.1.0"
 
 parseCliArgs :: Array String -> Either ArgError CliArgs
 parseCliArgs =
