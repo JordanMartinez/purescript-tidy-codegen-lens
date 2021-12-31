@@ -14,10 +14,10 @@ Run `spago build` and then `./tidy-mklens <CLI args>`
 $ ./tidy-mklens --help
 tidy-mklens
     A CLI for generating optics for your data types
-    
-    Expected usage: 
+
+    Expected usage:
       tidy-mklens [OPTIONS] PURS_GLOBS...
-    
+
     Examples:
       tidy-mklens src
       tidy-mklens -w -p src/RecordLens.purs -m RecordLens src
@@ -32,7 +32,7 @@ tidy-mklens
     --label-style-abc,-b                          Data constructors with 3+ args will use record labels based on the alphabet (e.g. 'a', 'b', ..., 'z', 'aa', 'ab', ...)
     --label-style-arg,-a                          Data constructors with 3+ args will use record labels of 'argN' (e.g. 'arg1', 'arg2', ..., 'argN')
     --version,-v                                  Shows the current version
-    
+
     PURS_GLOBS                                    Globs for PureScript sources.
 ```
 
