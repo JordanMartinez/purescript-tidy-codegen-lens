@@ -282,6 +282,7 @@ generateLensModule options filePath = do
     extractTypeCtor = case _ of
       TypeConstructor (QualifiedName tyCtor) -> Just tyCtor.name
       TypeApp (TypeConstructor (QualifiedName (tyCtor))) _ -> Just tyCtor.name
+      TypeParens (Wrapped { value }) -> extractTypeCtor value
       _ -> Nothing
 
 hasDecls :: Module Void -> Boolean

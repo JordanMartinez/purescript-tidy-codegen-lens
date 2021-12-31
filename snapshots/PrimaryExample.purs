@@ -33,6 +33,7 @@ module Snapshots.PrimaryExample
   -- , Newtype_TypeNotExported(..)
   , Newtype_TypeOnlyExported
   , NewtypedRecord(..)
+  , NewtypedRecordWithTyVars(..)
   , NewtypedType(..)
   , Record_ImportedTypesAreReimported(..)
   , TypeAlias_Record
@@ -130,6 +131,12 @@ newtype NewtypedRecord = NewtypedRecord
   , second :: String
   }
 derive instance newtypeNewtypedRecord :: Newtype NewtypedRecord _
+
+newtype NewtypedRecordWithTyVars a b = NewtypedRecord
+  { first :: a
+  , second :: b
+  }
+derive instance newtypeNewtypedRecordWithTyVars :: Newtype (NewtypedRecordWithTyVars a b) _
 
 newtype NewtypedType = NewtypedType Int
 derive instance newtypeNewtypedType :: Newtype NewtypedType _
