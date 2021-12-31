@@ -38,7 +38,7 @@ tidy-mklens
 
 ## Examples
 
-The table illustrates some of the CLI args above via the current output on the files stored in the [snapshots folder](./snapshots).
+The table illustrates some of the CLI args above via the current output on the files stored in the [snapshots folder](./snapshots). You can verify that these compile via `spago -x snapshots.dhall build`.
 
 | Purpose | Files |
 | - | - |
