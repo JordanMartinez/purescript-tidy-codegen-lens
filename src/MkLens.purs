@@ -324,7 +324,7 @@ genOptic opt souceFileModName exportMap importMap typesWithDeriveNewtypeInstance
     -- Everything was exported
     --    module Foo where
     Nothing -> case keyword of
-      Type_AliasedType _ -> pure Set.empty
+      Type_AliasedType aliasedTy -> genTypeAliasLens aliasedTy
       Data_Constructors constructors -> genDataOptic constructors
       Newtype_WrappedType wrappedTy
         | Set.member (unName tyName) typesWithDeriveNewtypeInstance -> genNewtypeOptic wrappedTy
