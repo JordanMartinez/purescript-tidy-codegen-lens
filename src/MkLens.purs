@@ -29,7 +29,6 @@ import Node.Path (FilePath, basenameWithoutExt, dirname, extname)
 import Node.Path as Path
 import Partial.Unsafe (unsafePartial)
 import PureScript.CST (RecoveredParserResult(..), parseModule)
-import PureScript.CST.Traversal (defaultMonoidalVisitor, foldMapModule)
 import PureScript.CST.Types (DataCtor(..), DataMembers(..), Declaration(..), Export(..), FixityOp(..), Foreign(..), Import(..), ImportDecl(..), Label(..), Labeled(..), Module(..), ModuleBody(..), ModuleHeader(..), ModuleName, Name(..), Operator, Proper(..), QualifiedName(..), Row(..), Separated(..), Type(..), TypeVarBinding(..), Wrapped(..))
 import Safe.Coerce (coerce)
 import Tidy.Codegen (binderCtor, binderRecord, binderVar, caseBranch, declSignature, declValue, exprApp, exprCase, exprCtor, exprIdent, exprLambda, exprRecord, exprSection, exprTyped, printModule, typeApp, typeCtor, typeForall, typeRecord, typeString, typeVar)
@@ -300,18 +299,16 @@ type DeclType =
   }
 
 extractDecls :: Module Void -> Array DeclType
-extractDecls cst = foldMapModule visitor cst
+extractDecls (Module { body: ModuleBody { decls } }) = foldl foldFn [] decls
   where
-  visitor = defaultMonoidalVisitor
-    { onDecl = case _ of
-        DeclData ({ name, vars }) (Just (Tuple _ sep)) -> do
-          Array.singleton $ { tyName: name, tyVars: vars, keyword: Data_Constructors (unSeparated sep) }
-        DeclNewtype ({ name, vars }) _ _ ty -> do
-          Array.singleton $ { tyName: name, tyVars: vars, keyword: Newtype_WrappedType ty }
-        DeclType ({ name, vars }) _ ty -> do
-          Array.singleton $ { tyName: name, tyVars: vars, keyword: Type_AliasedType ty }
-        _ -> mempty
-    }
+  foldFn acc = case _ of
+    DeclData ({ name, vars }) (Just (Tuple _ sep)) -> do
+      Array.snoc acc $ { tyName: name, tyVars: vars, keyword: Data_Constructors (unSeparated sep) }
+    DeclNewtype ({ name, vars }) _ _ ty -> do
+      Array.snoc acc $ { tyName: name, tyVars: vars, keyword: Newtype_WrappedType ty }
+    DeclType ({ name, vars }) _ ty -> do
+      Array.snoc acc $ { tyName: name, tyVars: vars, keyword: Type_AliasedType ty }
+    _ -> acc
 
 genOptic
   :: Partial
