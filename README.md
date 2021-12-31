@@ -82,3 +82,57 @@ Files were generated using the below commands, which are stored in [regen-snapsh
 # Here's the primary example, showing the full power of the code
 ./tidy-mklens --gen-type-alias-lenses snapshots/PrimaryExample.purs
 ```
+
+## Assumptions
+
+**In general, the generated `Lens.purs` file(s) will compile so long as the source file compiles and does not contain any warnings regarding your imports. However, the generated file may produce compiler warnings.**
+
+`tidy-mklens` uses limited information to generate a `Lens.purs` file. There are some ambiguous situations it cannot handle without more information (e.g. type checking).
+
+More specifically, the generated `Lens.purs` file will compile if the following is true about your source file:
+```purescript
+module ModuleName where
+
+-- Assumption #1:
+-- To ensure types referenced in the source file's types are imported
+-- in the generated file, always re-import all open imports.
+--
+-- If the types referenced in the source file's types are from imports,
+-- the generated file will not compile unless they are imported
+-- in the generated file, too.
+--
+-- However, this will produce compiler warnings in the generated file
+-- if the open imports' members aren't used.
+-- `tidy-mklens` can't know what these modules import
+-- and thus whether they would be used in the generated file.
+--
+-- Note: the compiler warns if 2+ open imports are used.
+import Prelude
+import SomethingElse
+import MyModule hiding (someMember)
+
+-- Assumption #2:
+-- Each module alias to an open import refers to at most one module.
+--
+-- Without this constraint, `tidy-mklens` cannot know which module
+-- (e.g. `Module1` or `Module2`) to import in the generated file.
+--
+-- Note: the compiler warns if an alias refers to 2+ open imports.
+import ImportWithModuleAlias as ThisIsOk
+import SomeModule hiding (someMember) as ThisIsAlsoOk
+import Module1 as ThisIsBadBecauseItRefersToMultipleModules
+import Module2 as ThisIsBadBecauseItRefersToMultipleModules
+
+-- That being said, module aliases to closed imports are ok,
+-- even if one alias refers to the multipe modules.
+--
+-- All usages of such members will use the qualified notation
+-- for them (e.g. `Mod.Type1`), so `tidy-mklens` can determine
+-- which module to import to ensure that type is included
+-- in the generated `Lens.purs` file.
+import ModuleA (Type1, Type2) as Mod
+import ModuleB (Type3, Type4) as Mod
+
+-- Explicit imports work fine without issues
+import ModuleWithExplicitExports (Foo, bar, baz)
+```
