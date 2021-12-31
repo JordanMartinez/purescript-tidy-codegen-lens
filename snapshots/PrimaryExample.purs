@@ -29,6 +29,7 @@ module Snapshots.PrimaryExample
   , NewtypeDefinedInSourceFile(..)
   , Newtype_TypeExported_CtorExported_All(..)
   , Newtype_TypeExported_CtorExported_ByName(Newtype_TypeExported_CtorExported_ByName)
+  , Newtype_TypeExported_CtorExported_NoDerivedNewtypeInstance(..)
   -- , Newtype_TypeNotExported(..)
   , Newtype_TypeOnlyExported
   , NewtypedRecord(..)
@@ -47,6 +48,8 @@ import Prelude
 import Prim.Row hiding (class Cons)
 import Prim hiding (Char)
 import Prim.Boolean hiding (True) as PB
+
+import Data.Newtype (class Newtype)
 
 import Snapshots.Imports.ImportedExplicitTypesNoModuleAlias (MyAlias, MyData, MyNewtype)
 import Snapshots.Imports.ImportedExplicitTypesWithModuleAlias (MyData, MyNewtype, MyAlias) as Shared
@@ -126,11 +129,14 @@ newtype NewtypedRecord = NewtypedRecord
   { first :: String
   , second :: String
   }
+derive instance newtypeNewtypedRecord :: Newtype NewtypedRecord _
 
 newtype NewtypedType = NewtypedType Int
+derive instance newtypeNewtypedType :: Newtype NewtypedType _
 
 data DataDefinedInSourceFile = DataDefinedInSourceFile
 newtype NewtypeDefinedInSourceFile = NewtypeDefinedInSourceFile Int
+derive instance newtypeNewtypeDefinedInSourceFile :: Newtype NewtypeDefinedInSourceFile _
 type AliasDefinedInSourceFile = Int
 foreign import data FfiTypeDefinedInSourceFile :: Type
 
@@ -172,6 +178,7 @@ newtype Record_ImportedTypesAreReimported = Record_ImportedTypesAreReimported
       , myFfi :: FfiTypeDefinedInSourceFile
       }
   }
+derive instance newtypeRecord_ImportedTypesAreReimported :: Newtype Record_ImportedTypesAreReimported _
 
 data Data_TypeNotExported = Data_TypeNotExported
 data Data_TypeOnlyExported = Data_TypeOnlyExported
@@ -189,9 +196,19 @@ type TypeAlias_TypeNotExported = Int
 type TypeAlias_TypeExported = Int
 
 newtype Newtype_TypeNotExported = Newtype_TypeNotExported Int
+derive instance newtypeNewtype_TypeNotExported :: Newtype Newtype_TypeNotExported _
+
 newtype Newtype_TypeOnlyExported = Newtype_TypeOnlyExported Int
+derive instance newtypeNewtype_TypeOnlyExported :: Newtype Newtype_TypeOnlyExported _
+
 newtype Newtype_TypeExported_CtorExported_All = Newtype_TypeExported_CtorExported_All Int
+derive instance newtypeNewtype_TypeExported_CtorExported_All :: Newtype Newtype_TypeExported_CtorExported_All _
+
 newtype Newtype_TypeExported_CtorExported_ByName = Newtype_TypeExported_CtorExported_ByName Int
+derive instance Newtype Newtype_TypeExported_CtorExported_ByName _
+
+newtype Newtype_TypeExported_CtorExported_NoDerivedNewtypeInstance = Newtype_TypeExported_CtorExported_NoDerivedNewtypeInstance Int
+-- derive instance :: Newtype Newtype_TypeExported_CtorExported_NoDerivedNewtypeInstance _
 
 data EnsureSharedImportIsUsed =
   EnsureSharedImportIsUsed

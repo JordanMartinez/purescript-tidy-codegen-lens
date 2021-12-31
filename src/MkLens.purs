@@ -112,7 +112,7 @@ generateLensModule options filePath = do
         modulePath = (unwrap sourceFileModName) <> ".Lens"
         Tuple labelNames generatedModule = runFree coerce $ unsafePartial $ runCodegenTModule modulePath do
           importOpenImports cst
-          labelNames <- traverse (genOptic options sourceFileModName (getExportMap cst) (getImportedTypes cst)) $ extractDecls cst
+          labelNames <- traverse (genOptic options sourceFileModName (getExportMap cst) (getImportedTypes cst) (getTypesWithDerivedNewtypeInstances cst)) $ extractDecls cst
           let labelNameSet = foldl Set.union Set.empty labelNames
           unless (isJust options.genGlobalPropFile) do
             genLensProp labelNameSet
@@ -264,6 +264,26 @@ generateLensModule options filePath = do
             ImportTypeOp _ opName -> Map.insert (TypeOperator possibleModAlias (unName opName)) (unName r.module) accum
             _ -> acc
 
+  getTypesWithDerivedNewtypeInstances :: Module Void -> Set Proper
+  getTypesWithDerivedNewtypeInstances (Module { body: ModuleBody { decls } }) =
+    foldl foldFn Set.empty decls
+    where
+    foldFn :: Set Proper -> Declaration Void -> Set Proper
+    foldFn acc = case _ of
+      -- derive instance Newtype TyNameNoTyVars _
+      -- derive instance Newtype (TyNameWithTyVars a b c) _
+      DeclDerive _ _ { className: QualifiedName r, types: [ tyCtorWithPossibleArgs, _underscore ] }
+        | (unwrap $ r.name) == "Newtype" -- note: what if imported qualified? need to figure out what module alias is
+        , Just tyCtor <- extractTypeCtor tyCtorWithPossibleArgs ->
+            Set.insert tyCtor acc
+
+      _ ->
+        acc
+
+    extractTypeCtor = case _ of
+      TypeConstructor (QualifiedName tyCtor) -> Just tyCtor.name
+      TypeApp (TypeConstructor (QualifiedName (tyCtor))) _ -> Just tyCtor.name
+      _ -> Nothing
 
 hasDecls :: Module Void -> Boolean
 hasDecls (Module { body: ModuleBody { decls } }) = not $ Array.null decls
@@ -299,16 +319,19 @@ genOptic
   -> ModuleName
   -> Maybe ExportedTypeMap
   -> ImportedTypes
+  -> Set Proper
   -> DeclType
   -> Codegen Void (Set String)
-genOptic opt souceFileModName exportMap importMap { tyName, tyVars, keyword } =
+genOptic opt souceFileModName exportMap importMap typesWithDeriveNewtypeInstance { tyName, tyVars, keyword } =
   case exportMap of
     -- Everything was exported
     --    module Foo where
     Nothing -> case keyword of
       Type_AliasedType _ -> pure Set.empty
       Data_Constructors constructors -> genDataOptic constructors
-      Newtype_WrappedType wrappedTy -> genNewtypeOptic wrappedTy
+      Newtype_WrappedType wrappedTy
+        | Set.member (unName tyName) typesWithDeriveNewtypeInstance -> genNewtypeOptic wrappedTy
+        | otherwise -> pure Set.empty
 
     -- Only some things were exported
     --    module Foo (something) where
@@ -326,7 +349,9 @@ genOptic opt souceFileModName exportMap importMap { tyName, tyVars, keyword } =
       Just DCMAll -> case keyword of
         Type_AliasedType _ -> pure Set.empty
         Data_Constructors constructors -> genDataOptic constructors
-        Newtype_WrappedType wrappedTy -> genNewtypeOptic wrappedTy
+        Newtype_WrappedType wrappedTy
+          | Set.member (unName tyName) typesWithDeriveNewtypeInstance -> genNewtypeOptic wrappedTy
+          | otherwise -> pure Set.empty
   where
     genDataOptic constructors = case constructors of
       -- This can never occur because `DeclData` case above only matches on `Just`
