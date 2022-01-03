@@ -26,6 +26,7 @@ module Snapshots.PrimaryExample
   , Data_Wrapping_Record(..)
   , EnsureSharedImportIsUsed(..)
   , FfiTypeDefinedInSourceFile
+  , KindedTyVars(..)
   , NewtypeDefinedInSourceFile(..)
   , Newtype_TypeExported_CtorExported_All(..)
   , Newtype_TypeExported_CtorExported_ByName(Newtype_TypeExported_CtorExported_ByName)
@@ -45,17 +46,16 @@ module Snapshots.PrimaryExample
   where
 
 import Prelude
-
-import Prim.Row hiding (class Cons)
 import Prim hiding (Char)
-import Prim.Boolean hiding (True) as PB
+import Prim.Row hiding (class Cons)
 
 import Data.Newtype (class Newtype)
-
+import Prim.Boolean hiding (True) as PB
 import Snapshots.Imports.ImportedExplicitTypesNoModuleAlias (MyAlias, MyData, MyNewtype)
 import Snapshots.Imports.ImportedExplicitTypesWithModuleAlias (MyData, MyNewtype, MyAlias) as Shared
 import Snapshots.Imports.ModuleAliasOnly as Q
 import Snapshots.Imports.SharedModuleAlias as Shared
+import Snapshots.UseKindedTyVars (KindedTyVars(..))
 
 data Data_NoTyVars_Args0 = Data_NoTyVars_Args0
 
@@ -216,6 +216,9 @@ derive instance Newtype Newtype_TypeExported_CtorExported_ByName _
 
 newtype Newtype_TypeExported_CtorExported_NoDerivedNewtypeInstance = Newtype_TypeExported_CtorExported_NoDerivedNewtypeInstance Int
 -- derive instance :: Newtype Newtype_TypeExported_CtorExported_NoDerivedNewtypeInstance _
+
+data CustomKind :: Type
+data KindedTyVars (f :: CustomKind -> Type) = KindedTyVars
 
 data EnsureSharedImportIsUsed =
   EnsureSharedImportIsUsed

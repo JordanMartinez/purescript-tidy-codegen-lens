@@ -368,7 +368,7 @@ genOptic opt otherInfo { tyName, tyVars, keyword } = case keyword of
           declIdentifier = "_" <> (unwrap tyName)
         tell
           [ declSignature declIdentifier
-              $ typeForall tyVars
+              $ typeForall (map dropTyVarKind tyVars)
               $ typeApp (typeCtor tyIso')
                   [ (typeApp (typeCtor tyName) $ map tyVarToTypeVar tyVars)
                   , aliasedTy
@@ -412,7 +412,7 @@ genOptic opt otherInfo { tyName, tyVars, keyword } = case keyword of
       declIdentifier = "_" <> (unwrap tyName)
     tell
       [ declSignature declIdentifier
-          $ typeForall tyVars
+          $ typeForall (map dropTyVarKind tyVars)
           $ typeApp (typeCtor tyLens')
               [ (typeApp (typeCtor tyName) $ map tyVarToTypeVar tyVars)
               , wrappedTy
@@ -435,6 +435,11 @@ tyVarToTypeVar :: TypeVarBinding Void -> Type Void
 tyVarToTypeVar = case _ of
   TypeVarName n -> typeVar n
   TypeVarKinded (Wrapped { value: Labeled { label: n } }) -> typeVar n
+
+dropTyVarKind :: TypeVarBinding Void -> TypeVarBinding Void
+dropTyVarKind = case _ of
+  TypeVarKinded (Wrapped { value: Labeled { label: n } }) -> TypeVarName n
+  n -> n
 
   {-
     1. We never import open imports unless we come across a type we cannot find.
@@ -585,7 +590,7 @@ genLensProduct opt otherInfo tyName tyVars ctorName fields = do
         }
       tell
         [ declSignature declIdentifier
-            $ typeForall tyVars
+            $ typeForall (map dropTyVarKind tyVars)
             $ typeApp (typeCtor tyLens')
                 [ typeApp (typeCtor tyName) $ map tyVarToTypeVar tyVars
                 , typeCtor prelude.unitType
@@ -605,7 +610,7 @@ genLensProduct opt otherInfo tyName tyVars ctorName fields = do
     [ ty1 ] -> do
       tell
         [ declSignature declIdentifier
-            $ typeForall tyVars
+            $ typeForall (map dropTyVarKind tyVars)
             $ typeApp (typeCtor tyLens')
                 [ typeApp (typeCtor tyName) $ map tyVarToTypeVar tyVars
                 , ty1
@@ -630,7 +635,7 @@ genLensProduct opt otherInfo tyName tyVars ctorName fields = do
         }
       tell
         [ declSignature declIdentifier
-            $ typeForall tyVars
+            $ typeForall (map dropTyVarKind tyVars)
             $ typeApp (typeCtor tyLens')
                 [ typeApp (typeCtor tyName) $ map tyVarToTypeVar tyVars
                 , typeApp (typeCtor tupleRec.ty) [ ty1, ty2 ]
@@ -660,7 +665,7 @@ genLensProduct opt otherInfo tyName tyVars ctorName fields = do
         { recordTy, varNames } = fieldLabels fields opt.recordLabelStyle
       tell
         [ declSignature declIdentifier
-            $ typeForall tyVars
+            $ typeForall (map dropTyVarKind tyVars)
             $ typeApp (typeCtor tyLens')
                 [ typeApp (typeCtor tyName) $ map tyVarToTypeVar tyVars
                 , typeRecord recordTy Nothing
@@ -714,7 +719,7 @@ genPrismSum opt otherInfo tyName tyVars ctorName fields = do
         }
       tell
         [ declSignature declIdentifier
-            $ typeForall tyVars
+            $ typeForall (map dropTyVarKind tyVars)
             $ typeApp (typeCtor tyPrism')
                 [ typeApp (typeCtor tyName) $ map tyVarToTypeVar tyVars
                 , typeCtor prelude.unitType
@@ -743,7 +748,7 @@ genPrismSum opt otherInfo tyName tyVars ctorName fields = do
     [ ty1 ] -> do
       tell
         [ declSignature declIdentifier
-            $ typeForall tyVars
+            $ typeForall (map dropTyVarKind tyVars)
             $ typeApp (typeCtor tyPrism')
                 [ typeApp (typeCtor tyName) $ map tyVarToTypeVar tyVars
                 , ty1
@@ -777,7 +782,7 @@ genPrismSum opt otherInfo tyName tyVars ctorName fields = do
         }
       tell
         [ declSignature declIdentifier
-            $ typeForall tyVars
+            $ typeForall (map dropTyVarKind tyVars)
             $ typeApp (typeCtor tyPrism')
                 [ typeApp (typeCtor tyName) $ map tyVarToTypeVar tyVars
                 , typeApp (typeCtor tupleRec.ty) [ ty1, ty2 ]
@@ -816,7 +821,7 @@ genPrismSum opt otherInfo tyName tyVars ctorName fields = do
         { recordTy, varNames } = fieldLabels fields opt.recordLabelStyle
       tell
         [ declSignature declIdentifier
-            $ typeForall tyVars
+            $ typeForall (map dropTyVarKind tyVars)
             $ typeApp (typeCtor tyPrism')
                 [ typeApp (typeCtor tyName) $ map tyVarToTypeVar tyVars
                 , typeRecord recordTy Nothing
