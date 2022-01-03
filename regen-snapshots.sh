@@ -2,7 +2,6 @@
 
 rm \
   snapshots/CheckOpenImports/Reimport/Lens.purs \
-  snapshots/CheckOpenImports/ReimportWithHiding/Lens.purs \
   snapshots/CheckOpenImports/Remove/Lens.purs \
   snapshots/CheckOpenImports/RemoveHiding/Lens.purs \
   snapshots/PrimaryExample/Lens.purs \
