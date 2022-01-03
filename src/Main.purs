@@ -42,10 +42,10 @@ main = do
           Process.exit 0
         _ ->
           Process.exit 1
-    Right { genTypeAliasLens, genGlobalPropFile, recordLabelStyle, pursGlobs } -> launchAff_ do
-      files <- expandGlobs pursGlobs
-      labelSets <- traverse (generateLensModule { genTypeAliasLens, genGlobalPropFile, recordLabelStyle }) files
-      for_ genGlobalPropFile \{ filePath, moduleName, overwrite } -> do
+    Right { globs, options } -> launchAff_ do
+      files <- expandGlobs globs
+      labelSets <- traverse (generateLensModule options) files
+      for_ options.genGlobalPropFile \{ filePath, moduleName, overwrite } -> do
         let labelNameSet = Array.foldl Set.union Set.empty labelSets
         unless (Set.isEmpty labelNameSet) do
           let

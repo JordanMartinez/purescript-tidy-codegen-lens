@@ -3,6 +3,7 @@ module MkLens where
 import Prelude
 import Prim hiding (Type, Row)
 
+import CLI (CliArgs)
 import Control.Alt ((<|>))
 import Control.Monad.Free (runFree)
 import Control.Monad.Writer (tell)
@@ -27,7 +28,7 @@ import Effect.Class (liftEffect)
 import Effect.Exception (throw)
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff as FSA
-import Node.Path (FilePath, basenameWithoutExt, dirname, extname)
+import Node.Path (basenameWithoutExt, dirname, extname)
 import Node.Path as Path
 import Partial.Unsafe (unsafePartial)
 import PureScript.CST (RecoveredParserResult(..), parseModule)
@@ -36,12 +37,6 @@ import Safe.Coerce (coerce)
 import Tidy.Codegen (binderCtor, binderRecord, binderVar, caseBranch, declSignature, declValue, exprApp, exprCase, exprCtor, exprIdent, exprLambda, exprRecord, exprSection, exprTyped, printModule, typeApp, typeCtor, typeForall, typeRecord, typeString, typeVar)
 import Tidy.Codegen.Monad (Codegen, importCtor, importFrom, importOpen, importOpenHiding, importType, importTypeAll, importTypeOp, importValue, runCodegenTModule)
 import Types (RecordLabelStyle(..))
-
-type GenOptions =
-  { genTypeAliasLens :: Boolean
-  , genGlobalPropFile :: Maybe { filePath :: FilePath, moduleName :: String, overwrite :: Boolean }
-  , recordLabelStyle :: RecordLabelStyle
-  }
 
 data ImportedTypeKey
   = ModuleAlias ModuleName
@@ -103,7 +98,7 @@ type ExportedTypeMap = Map Proper DataCtorMembers
 -- | 1. Generate a lens/prism for a data type and newtype
 -- | 2. Generate a lens for each label referenced in the previous generated
 -- |    lenses or prisms.
-generateLensModule :: GenOptions -> String -> Aff (Set String)
+generateLensModule :: CliArgs -> String -> Aff (Set String)
 generateLensModule options filePath = do
   content <- FSA.readTextFile UTF8 filePath
   case parseModule content of
@@ -355,7 +350,7 @@ type DeclType =
 
 genOptic
   :: Partial
-  => GenOptions
+  => CliArgs
   -> GenOpticInfo
   -> DeclType
   -> Codegen Void GenOpticResult
@@ -560,7 +555,7 @@ genImportedType { referencedTypes } = go
 
 genLensProduct
   :: Partial
-  => GenOptions
+  => CliArgs
   -> GenOpticInfo
   -> Proper
   -> Array (TypeVarBinding Void)
@@ -680,7 +675,7 @@ genLensProduct opt otherInfo tyName tyVars ctorName fields = do
 
 genPrismSum
   :: Partial
-  => GenOptions
+  => CliArgs
   -> GenOpticInfo
   -> Proper
   -> Array (TypeVarBinding Void)

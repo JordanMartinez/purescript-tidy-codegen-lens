@@ -75,13 +75,12 @@ type CliArgs =
     -- | - `AlphabetRecordLabels`: `Foo a b c d -> { a, b, c, d }`
     -- | - `ArgRecordLabels`: `Foo a b c d -> { arg1: a, arg2: b, arg3: c, arg4: d }`
     recordLabelStyle :: RecordLabelStyle
-  , pursGlobs :: Array String
   }
 
 versionStr :: String
 versionStr = "v0.3.0"
 
-parseCliArgs :: Array String -> Either ArgError CliArgs
+parseCliArgs :: Array String -> Either ArgError { globs :: Array String, options :: CliArgs }
 parseCliArgs =
   parseArgs
     "tidy-mklens"
@@ -101,12 +100,13 @@ parseCliArgs =
     parser
   where
   parser =
-    fromRecord
-      { genTypeAliasLens
-      , genGlobalPropFile
-      , recordLabelStyle
-      , pursGlobs
-      }
+    { globs: _, options: _ }
+      <$> pursGlobs
+      <*> fromRecord
+            { genTypeAliasLens
+            , genGlobalPropFile
+            , recordLabelStyle
+            }
       <* flagInfo [ "--version", "-v" ] "Shows the current version" versionStr
       <* flagHelp
 
