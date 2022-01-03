@@ -132,7 +132,7 @@ newtype NewtypedRecord = NewtypedRecord
   }
 derive instance newtypeNewtypedRecord :: Newtype NewtypedRecord _
 
-newtype NewtypedRecordWithTyVars a b = NewtypedRecord
+newtype NewtypedRecordWithTyVars a b = NewtypedRecordWithTyVars
   { first :: a
   , second :: b
   }
