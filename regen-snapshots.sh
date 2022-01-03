@@ -1,5 +1,18 @@
 #!/usr/bin/env bash
 
+rm \
+  snapshots/CheckOpenImports/Reimport/Lens.purs \
+  snapshots/CheckOpenImports/ReimportWithHiding/Lens.purs \
+  snapshots/CheckOpenImports/Remove/Lens.purs \
+  snapshots/CheckOpenImports/RemoveHiding/Lens.purs \
+  snapshots/PrimaryExample/Lens.purs \
+  snapshots/UseAbcLabelStyle/Lens.purs \
+  snapshots/UseArgLabelStyle/Lens.purs \
+  snapshots/UseGlobalPropFile/GlobalRecordLens.purs \
+  snapshots/UseLocalProps/Module1/Lens.purs \
+  snapshots/UseLocalProps/Module2/Lens.purs \
+  snapshots/UseTypeAliases/Lens.purs
+
 ./tidy-mklens --label-style-arg snapshots/UseArgLabelStyle.purs
 
 ./tidy-mklens --label-style-abc snapshots/UseAbcLabelStyle.purs
