@@ -2,6 +2,7 @@
 /node_modules/
 /.pulp-cache/
 /output/
+/output-snapshots/
 /generated-docs/
 /.psc-package/
 /.psc*
