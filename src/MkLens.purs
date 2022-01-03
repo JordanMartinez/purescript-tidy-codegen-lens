@@ -364,7 +364,7 @@ genOptic opt otherInfo { tyName, tyVars, keyword } = case keyword of
     unfoundRefTypes <-
       if opt.genTypeAliasLens then do
         identity_ <- importFrom "Prelude" $ importValue "identity"
-        tyLens' <- importFrom "Data.Lens" $ importType "Lens'"
+        tyIso' <- importFrom "Data.Lens.Iso" $ importType "Iso'"
         void $ importFrom otherInfo.sourceFileModName $ importType $ unwrap tyName
         unfoundRefTypes <- genImportedType otherInfo aliasedTy
         let
@@ -372,7 +372,7 @@ genOptic opt otherInfo { tyName, tyVars, keyword } = case keyword of
         tell
           [ declSignature declIdentifier
               $ typeForall tyVars
-              $ typeApp (typeCtor tyLens')
+              $ typeApp (typeCtor tyIso')
                   [ (typeApp (typeCtor tyName) $ map tyVarToTypeVar tyVars)
                   , aliasedTy
                   ]

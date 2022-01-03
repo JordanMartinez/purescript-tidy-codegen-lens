@@ -9,7 +9,7 @@ import Prim.Boolean hiding (True) as PB
 
 import Data.Either (Either(..))
 import Data.Lens (Lens')
-import Data.Lens.Iso (iso)
+import Data.Lens.Iso (Iso', iso)
 import Data.Lens.Iso.Newtype (_Newtype)
 import Data.Lens.Prism (Prism', prism)
 import Data.Lens.Record (prop)
@@ -145,14 +145,14 @@ _Data_Wrapping_Record
        }
 _Data_Wrapping_Record = iso (\(Data_Wrapping_Record a) -> a) Data_Wrapping_Record
 
-_TypeAlias_Record :: Lens' TypeAlias_Record
+_TypeAlias_Record :: Iso' TypeAlias_Record
   { recordFieldReferencedInExportedTypeAlias :: Int
   , bar :: String
   , baz :: Boolean
   }
 _TypeAlias_Record = identity
 
-_TypeAlias_Type :: Lens' TypeAlias_Type String
+_TypeAlias_Type :: Iso' TypeAlias_Type String
 _TypeAlias_Type = identity
 
 _NewtypedRecord :: Lens' NewtypedRecord
@@ -178,7 +178,7 @@ _DataDefinedInSourceFile = iso (const unit) (const DataDefinedInSourceFile)
 _NewtypeDefinedInSourceFile :: Lens' NewtypeDefinedInSourceFile Int
 _NewtypeDefinedInSourceFile = _Newtype
 
-_AliasDefinedInSourceFile :: Lens' AliasDefinedInSourceFile Int
+_AliasDefinedInSourceFile :: Iso' AliasDefinedInSourceFile Int
 _AliasDefinedInSourceFile = identity
 
 _Data_Product_ImportedTypesAreReimported :: Lens' Data_Product_ImportedTypesAreReimported
@@ -320,7 +320,7 @@ _Data_TypeExported_CtorExported_Sum_All_2 = prism (const Data_TypeExported_CtorE
     Data_TypeExported_CtorExported_Sum_All_2 -> Right unit
     other -> Left other
 
-_TypeAlias_TypeExported :: Lens' TypeAlias_TypeExported Int
+_TypeAlias_TypeExported :: Iso' TypeAlias_TypeExported Int
 _TypeAlias_TypeExported = identity
 
 _Newtype_TypeExported_CtorExported_All :: Lens' Newtype_TypeExported_CtorExported_All Int
