@@ -17,6 +17,7 @@ import Data.String.Regex.Flags (noFlags)
 import Data.String.Regex.Unsafe (unsafeRegex)
 import Node.Path (FilePath, basenameWithoutExt, extname)
 import Types (RecordLabelStyle(..))
+import Version (versionStr)
 
 type CliArgs =
   {
@@ -85,9 +86,6 @@ type CliArgs =
     -- | - `ArgRecordLabels`: `Foo a b c d -> { arg1: a, arg2: b, arg3: c, arg4: d }`
     recordLabelStyle :: RecordLabelStyle
   }
-
-versionStr :: String
-versionStr = "v0.3.0"
 
 parseCliArgs :: Array String -> Either ArgError { globs :: Array String, options :: CliArgs }
 parseCliArgs =
