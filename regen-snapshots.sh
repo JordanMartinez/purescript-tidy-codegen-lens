@@ -10,13 +10,19 @@ rm \
   snapshots/UseGlobalPropFile/GlobalRecordLens.purs \
   snapshots/UseLocalProps/Module1/Lens.purs \
   snapshots/UseLocalProps/Module2/Lens.purs \
-  snapshots/UseTypeAliases/Lens.purs
+  snapshots/UseTypeAliases/Lens.purs \
+  snapshots/UseLabelPrefix/Lens.purs \
+  snapshots/UseNoLabelPrefix/Lens.purs
 
 ./tidy-mklens --label-style-arg snapshots/UseArgLabelStyle.purs
 
 ./tidy-mklens --label-style-abc snapshots/UseAbcLabelStyle.purs
 
 ./tidy-mklens --gen-type-alias-isos snapshots/UseTypeAliases.purs
+
+./tidy-mklens --label-prefix "prop" snapshots/UseLabelPrefix.purs
+
+./tidy-mklens --label-prefix-none snapshots/UseNoLabelPrefix.purs
 
 ./tidy-mklens snapshots/UseLocalProps/
 

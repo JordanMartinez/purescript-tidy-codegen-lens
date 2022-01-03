@@ -21,6 +21,8 @@ import Data.Set (Set)
 import Data.Set as Set
 import Data.String (splitAt, toUpper)
 import Data.String.CodeUnits as String
+import Data.String.NonEmpty (NonEmptyString)
+import Data.String.NonEmpty as NES
 import Data.Traversable (class Foldable, foldl, for, for_, traverse)
 import Data.Tuple (Tuple(..), snd)
 import Effect.Aff (Aff)
@@ -121,7 +123,7 @@ generateLensModule options filePath = do
               importOpen modName
             for_ otherInfo.openHiddenImports reimportOpenHidingImports
           unless (isJust options.genGlobalPropFile) do
-            genLensProp labelNames
+            genLensProp options.labelPrefix labelNames
           pure labelNames
       when (hasDecls generatedModule) do
         let
@@ -840,8 +842,8 @@ genPrismSum opt otherInfo tyName tyVars ctorName fields = do
 -- | _propLabel :: forall r a. Lens' { label :: a | r } a
 -- | _propLabel = prop (Proxy :: Proxy "label")
 -- | ```
-genLensProp :: Partial => Set String -> Codegen Void Unit
-genLensProp labelsInFile = do
+genLensProp :: Partial => Maybe NonEmptyString -> Set String -> Codegen Void Unit
+genLensProp lblPrefix labelsInFile = do
   tyLens' <- importFrom "Data.Lens" $ importType "Lens'"
   prop <- importFrom "Data.Lens.Record" $ importValue "prop"
   proxy <- importFrom "Type.Proxy"
@@ -850,7 +852,9 @@ genLensProp labelsInFile = do
     }
   for_ labelsInFile \label -> do
     let
-      declIdentifier = "_prop" <> uppercaseFirstChar label
+      declIdentifier = case lblPrefix of
+        Nothing -> "_" <> label
+        Just prefix -> "_" <> NES.toString prefix <> uppercaseFirstChar label
     tell
       [ declSignature declIdentifier
           $ typeForall [ typeVar "r", typeVar "a" ]

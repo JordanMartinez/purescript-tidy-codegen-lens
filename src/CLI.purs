@@ -7,9 +7,11 @@ import Control.Monad.Error.Class (throwError)
 import Data.Either (Either)
 import Data.Foldable (for_)
 import Data.FoldableWithIndex (findWithIndex)
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 import Data.String (Pattern(..), joinWith)
 import Data.String as String
+import Data.String.NonEmpty.Internal (NonEmptyString, liftS)
+import Data.String.NonEmpty.Internal as NES
 import Data.String.Regex (test)
 import Data.String.Regex.Flags (noFlags)
 import Data.String.Regex.Unsafe (unsafeRegex)
@@ -66,6 +68,13 @@ type CliArgs =
     genGlobalPropFile :: Maybe { filePath :: FilePath, moduleName :: String, overwrite :: Boolean }
 
   ,
+    -- | By default, this will be "prop", so that a record label `{ foo :: a }`
+    -- | will have the `_propFoo` generated for it.
+    -- | If this value is empty, the label generated will instead be
+    -- | `_foo`.
+    labelPrefix :: Maybe NonEmptyString
+
+  ,
     -- | When there are data constructors with 3+ arguments
     -- | we could convert the value into a nested `Tuple`
     -- | but that seems less user-friendly than just using
@@ -106,9 +115,30 @@ parseCliArgs =
             { genTypeAliasLens
             , genGlobalPropFile
             , recordLabelStyle
+            , labelPrefix
             }
       <* flagInfo [ "--version", "-v" ] "Shows the current version" versionStr
       <* flagHelp
+
+  labelPrefix =
+    choose "Label prefix"
+      [ Nothing <$ flag [ "--label-prefix-none", "-n" ] "Use '_foo' for the lens for a record '{ foo :: a }'"
+      , argument [ "--label-prefix", "-l" ] "Use `_PREFIXFoo` for the lens for a record '{ foo :: a }'"
+          # unformat "PREFIX" validatePrefix
+      ]
+      # default (NES.fromString "prop")
+    where
+    validatePrefix s = do
+      case NES.fromString s of
+        Nothing -> do
+          throwError $ "Invalid label prefix. Prefix must not be empty"
+        x@(Just nes) -> do
+          unless (liftS (test alphaNumUnderscoreRegex) nes) do
+            throwError $ "Invalid label prefix. '" <> s <> "' must pass the '^[a-zA-Z0-9_]+$' regex."
+          pure x
+
+      where
+      alphaNumUnderscoreRegex = unsafeRegex "^[a-zA-Z0-9_]+$" noFlags
 
   genTypeAliasLens =
     flag

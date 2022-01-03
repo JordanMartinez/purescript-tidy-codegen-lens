@@ -50,7 +50,7 @@ main = do
         unless (Set.isEmpty labelNameSet) do
           let
             content = printModule $ unsafePartial $ codegenModule moduleName do
-              genLensProp labelNameSet
+              genLensProp options.labelPrefix labelNameSet
           alreadyExists <- FSA.exists filePath
           unless (alreadyExists && not overwrite) do
             unlessM (FSA.exists $ dirname filePath) do
