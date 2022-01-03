@@ -15,3 +15,5 @@
   snapshots/UseGlobalPropFile
 
 ./tidy-mklens --gen-type-alias-lenses snapshots/PrimaryExample.purs
+
+./tidy-mklens snapshots/CheckOpenImports

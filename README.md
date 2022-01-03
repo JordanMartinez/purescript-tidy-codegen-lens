@@ -81,6 +81,9 @@ Files were generated using the below commands, which are stored in [regen-snapsh
 
 # Here's the primary example, showing the full power of the code
 ./tidy-mklens --gen-type-alias-lenses snapshots/PrimaryExample.purs
+
+# Open imports aren't always handled correctly. See these snapshots
+./tidy-mklens snapshots/CheckOpenImports
 ```
 
 ## Assumptions
