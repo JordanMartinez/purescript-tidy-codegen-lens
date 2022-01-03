@@ -112,8 +112,8 @@ parseCliArgs =
 
   genTypeAliasLens =
     flag
-      [ "--gen-type-alias-lenses", "-t" ]
-      "Generate lenses for type aliases"
+      [ "--gen-type-alias-isos", "-t" ]
+      "Generate isos for type aliases"
       # boolean
   genGlobalPropFile =
     optional

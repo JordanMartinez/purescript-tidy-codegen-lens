@@ -17,7 +17,7 @@ rm \
 
 ./tidy-mklens --label-style-abc snapshots/UseAbcLabelStyle.purs
 
-./tidy-mklens --gen-type-alias-lenses snapshots/UseTypeAliases.purs
+./tidy-mklens --gen-type-alias-isos snapshots/UseTypeAliases.purs
 
 ./tidy-mklens snapshots/UseLocalProps/
 
@@ -27,6 +27,6 @@ rm \
   --global-record-lens-module Snapshots.UseGlobalPropFile.GlobalRecordLens \
   snapshots/UseGlobalPropFile
 
-./tidy-mklens --gen-type-alias-lenses snapshots/PrimaryExample.purs
+./tidy-mklens --gen-type-alias-isos snapshots/PrimaryExample.purs
 
 ./tidy-mklens snapshots/CheckOpenImports

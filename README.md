@@ -24,7 +24,7 @@ tidy-mklens
       tidy-mklens --label-style-abc src
       tidy-mklens --gen-type-alias-lenses src
 
-    --gen-type-alias-lenses,-t                    Generate lenses for type aliases
+    --gen-type-alias-isos,-t                      Generate isos for type aliases
     --global-record-lens-file,-p FILE_PATH        Output record label lenses to this single file rather than in each module's file (e.g. `src/RecordLens.purs`)
     --global-record-lens-module,-m MODULE_PATH    The full module path to use for the single record label lenses file (e.g `Foo.Bar.Lens`)
     --global-record-lens-overwrite-file,-w        Overwrite the single file if it already exists
@@ -44,7 +44,7 @@ The table illustrates some of the CLI args above via the current output on the f
 | - | - |
 | Show the 'arg' label style | <ul><li><p>Source file</p><ul><li>[UseArgLabelStyle.purs](./snapshots/UseArgLabelStyle.purs)</li></ul></li><li><p>Output file(s)</p><ul><li>[UseArgLabelStyle/Lens.purs](./snapshots/UseArgLabelStyle/Lens.purs)</li></ul></li></ul> |
 | Show the 'abc' label style | <ul><li><p>Source file</p><ul><li>[UseAbcLabelStyle.purs](./snapshots/UseAbcLabelStyle.purs)</li></ul></li><li><p>Output file(s)</p><ul><li>[UseAbcLabelStyle/Lens.purs](./snapshots/UseAbcLabelStyle/Lens.purs)</li></ul></li></ul> |
-| Show the `--gen-type-alias-lenses` option | <ul><li><p>Source file</p><ul><li>[UseTypeAliases.purs](./snapshots/UseTypeAliases.purs)</li></ul></li><li><p>Output file(s)</p><ul><li>[UseTypeAliases/Lens.purs](./snapshots/UseTypeAliases/Lens.purs)</li></ul></li></ul> |
+| Show the `--gen-type-alias-isos` option | <ul><li><p>Source file</p><ul><li>[UseTypeAliases.purs](./snapshots/UseTypeAliases.purs)</li></ul></li><li><p>Output file(s)</p><ul><li>[UseTypeAliases/Lens.purs](./snapshots/UseTypeAliases/Lens.purs)</li></ul></li></ul> |
 | The record label lenses will be duplicated in each module. This is why the `--gen-record-lens-*` options exist | <ul><li><p>Source file</p><ul><li>[UseLocalProps/Module1.purs](./snapshots/UseLocalProps/Module1.purs)</li><li>[UseLocalProps/Module2.purs](./snapshots/UseLocalProps/Module2.purs)</li></ul></li><li><p>Output file(s)</p><ul><li>[UseLocalProps/Module1/Lens.purs](./snapshots/UseLocalProps/Module1/Lens.purs)</li><li>[UseLocalProps/Module2/Lens.purs](./snapshots/UseLocalProps/Module2/Lens.purs)</li></ul></li></ul> |
 | Demo the `--gen-record-lens-*` options | <ul><li><p>Source file</p><ul><li>[UseGlobalPropFile/Module1.purs](./snapshots/UseGlobalPropFile/Module1.purs)</li><li>[UseGlobalPropFile/Module2.purs](./snapshots/UseGlobalPropFile/Module2.purs)</li></ul></li><li><p>Output file(s)</p><ul><li>[UseGlobalPropFile/GlobalRecordLens.purs](./snapshots/UseGlobalPropFile/GlobalRecordLens.purs)</li></ul></li></ul> |
 | Primary example | <ul><li><p>Source file</p><ul><li>[PrimaryExample.purs](./snapshots/PrimaryExample.purs)</li></ul></li><li><p>Output file(s)</p><ul><li>[PrimaryExample/Lens.purs](./snapshots/PrimaryExample/Lens.purs)</li></ul></li></ul> |
@@ -60,7 +60,7 @@ Files were generated using the below commands, which are stored in [regen-snapsh
 # Can optionally generate lenses for type aliases
 # Useful when just getting familiar with a library and type signatures
 # and typed holes are all you have
-./tidy-mklens --gen-type-alias-lenses snapshots/UseTypeAliases.purs
+./tidy-mklens --gen-type-alias-isos snapshots/UseTypeAliases.purs
 
 # If the same label is used in multiple types,
 # a lens for that label will be stored in each file,
@@ -80,7 +80,7 @@ Files were generated using the below commands, which are stored in [regen-snapsh
   snapshots/UseGlobalPropFile
 
 # Here's the primary example, showing the full power of the code
-./tidy-mklens --gen-type-alias-lenses snapshots/PrimaryExample.purs
+./tidy-mklens --gen-type-alias-isos snapshots/PrimaryExample.purs
 
 # Open imports aren't always handled correctly. See these snapshots
 ./tidy-mklens snapshots/CheckOpenImports
