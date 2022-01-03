@@ -1,9 +1,9 @@
 module Snapshots.PrimaryExample.Lens where
 
 import Prelude
+import Prim.Row
 
 import Prim hiding (Char)
-import Prim.Row hiding (class Cons)
 
 import Prim.Boolean hiding (True) as PB
 
@@ -336,10 +336,8 @@ _EnsureSharedImportIsUsed :: Lens' EnsureSharedImportIsUsed
   , arg3 :: (Shared.SharedMyNewtype Int Int Int)
   }
 _EnsureSharedImportIsUsed = iso
-  ( \(EnsureSharedImportIsUsed arg1 arg2 arg3) -> { arg1: arg1, arg2: arg2, arg3: arg3 }
-  )
-  \{ arg1, arg2, arg3 } ->
-    EnsureSharedImportIsUsed arg1 arg2 arg3
+  (\(EnsureSharedImportIsUsed arg1 arg2 arg3) -> { arg1: arg1, arg2: arg2, arg3: arg3 })
+  \{ arg1, arg2, arg3 } -> EnsureSharedImportIsUsed arg1 arg2 arg3
 
 _propAliasOnly :: forall r a. Lens' { aliasOnly :: a | r } a
 _propAliasOnly = prop (Proxy :: Proxy "aliasOnly")
