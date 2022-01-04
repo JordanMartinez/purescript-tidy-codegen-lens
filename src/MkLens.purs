@@ -9,7 +9,8 @@ import Control.Monad.Free (runFree)
 import Control.Monad.Writer (tell)
 import Data.Array (fold, mapWithIndex)
 import Data.Array as Array
-import Data.Array.NonEmpty.Internal (NonEmptyArray)
+import Data.Array.NonEmpty as NEA
+import Data.Array.NonEmpty (NonEmptyArray)
 import Data.Char (fromCharCode, toCharCode)
 import Data.Identity (Identity(..))
 import Data.Map (Map)
@@ -329,9 +330,9 @@ getDeclInfo (Module { header: ModuleHeader { exports, imports, name: sourceFileM
   declsInfo = foldl declsFoldFn { types: [], referencedTypes: Map.empty, tysWithNewtypeInstances: Set.empty } decls
     where
     declsFoldFn acc = case _ of
-      DeclData ({ name, vars }) (Just (Tuple _ sep)) -> do
+      DeclData ({ name, vars }) (Just (Tuple _ sep)) | Just ctors <- NEA.fromArray $ unSeparated sep -> do
         acc
-          { types = Array.snoc acc.types $ { tyName: (unName name), tyVars: vars, keyword: Data_Constructors (unSeparated sep) }
+          { types = Array.snoc acc.types $ { tyName: (unName name), tyVars: vars, keyword: Data_Constructors ctors }
           , referencedTypes = Map.insert (TypeName Nothing (unName name)) sourceFileModName acc.referencedTypes
           }
       DeclNewtype ({ name, vars }) _ _ ty -> do
@@ -371,7 +372,7 @@ hasDecls (Module { body: ModuleBody { decls } }) = not $ Array.null decls
 
 data DeclTypeKeyword
   = Newtype_WrappedType (Type Void)
-  | Data_Constructors (Array (DataCtor Void))
+  | Data_Constructors (NEA.NonEmptyArray (DataCtor Void))
   | Type_AliasedType (Type Void)
 
 type DeclType =
@@ -414,15 +415,10 @@ genOptic opt otherInfo { tyName, tyVars, keyword } = case keyword of
       }
 
   Data_Constructors constructors -> do
-    case constructors of
-      -- This can never occur because `DeclData` case above only matches on `Just`
-      -- which means there is at least one data constructor.
-      [] ->
-        pure { labelNames: Set.empty, unfoundRefTypes: Disj false }
-
-      [ DataCtor { name: ctorName , fields } ] -> do
-        void $ importFrom otherInfo.sourceFileModName $ importTypeAll $ unwrap tyName
-        genLensProduct opt otherInfo tyName tyVars (unName ctorName) fields
+    case NEA.uncons constructors of
+      { head: DataCtor { name: ctorName , fields }, tail: [] } -> do
+          void $ importFrom otherInfo.sourceFileModName $ importTypeAll $ unwrap tyName
+          genLensProduct opt otherInfo tyName tyVars (unName ctorName) fields
 
       _ -> do
         void $ importFrom otherInfo.sourceFileModName $ importTypeAll (unwrap tyName)
