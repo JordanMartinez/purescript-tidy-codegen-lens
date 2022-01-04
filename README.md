@@ -8,7 +8,7 @@ This is currently a WIP.
 
 ## Usage
 
-Run `spago build` and then `./tidy-mklens.js <CLI args>`
+For testing a local version, run `spago build` and then `./tidy-mklens.js <CLI args>`. To build a bundled one, use `./build-tidy-mklens.sh`.
 
 ```
 $ ./tidy-mklens.js --help
