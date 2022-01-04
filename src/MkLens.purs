@@ -163,6 +163,36 @@ type GenOpticResult =
   , unfoundRefTypes :: Disj Boolean
   }
 
+-- | To generate an optic for a data type, the following must be true:
+-- | - if a type alias, the type must be exported
+-- | - if a data type, the type and all of its constructors must be exported
+-- | - if a newtype, the newtype and its constructor must be exported. Moreover, it must have a derived `Newtype` instance
+-- |
+-- | Moreover, the generated file must also import all types that are referenced in the source file's types. Thus,
+-- | we first determine what types are imported (besides those defined in the file), and later check
+-- | which of those types are used in the source file's type declarations and then reimport those types.
+-- |
+-- | For example,
+-- | ```
+-- | module Example where
+-- | import OpenModule1
+-- | import OpenModule2 hiding (TypeFoo)
+-- | import ClosedModule (Type1, Type2)
+-- | import AliasedModule1 as Alias1
+-- | import AliasedModule2 (Type3, Type4) as Alias2
+-- | import AliasedModule3 hiding (TypeBar) as Alias3
+-- |
+-- | data MyFoo
+-- |  = Constructor1 Alias1.SomeType -- forces us to import `Alias1`
+-- |  | Constructor2 Type1 Alias2.Type3 -- import `ClosedModule (Type1)` and `Alias2 (Type3)`
+-- |  | Constructor3 SomeType -- forces us to import all open imports since no idea where it's defined
+-- |
+-- | -- `Alias3` does not need to be imported because it's never referenced in `MyFoo`'s definition.
+-- | ```
+-- |
+-- | We use `referencedTypes` to track what to import to ensure that a type referenced in `MyFoo`
+-- | will be imported. If a referenced type cannot be found in `referencedTypes`, then it must be from an open import.
+-- | We will import all the open imports only if this occurs.
 getDeclInfo
   :: Module Void
   -> Tuple (Array DeclType) GenOpticInfo
