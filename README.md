@@ -8,10 +8,10 @@ This is currently a WIP.
 
 ## Usage
 
-Run `spago build` and then `./tidy-mklens <CLI args>`
+Run `spago build` and then `./tidy-mklens.js <CLI args>`
 
 ```
-$ ./tidy-mklens --help
+$ ./tidy-mklens.js --help
 tidy-mklens
     A CLI for generating optics for your data types
 
@@ -57,46 +57,46 @@ Files were generated using the below commands, which are stored in [regen-snapsh
 
 ```bash
 # Note: the `arg` style is the default
-./tidy-mklens --label-style-arg snapshots/UseArgLabelStyle.purs
+./tidy-mklens.js --label-style-arg snapshots/UseArgLabelStyle.purs
 
-./tidy-mklens --label-style-abc snapshots/UseAbcLabelStyle.purs
+./tidy-mklens.js --label-style-abc snapshots/UseAbcLabelStyle.purs
 
 # Can optionally generate lenses for type aliases
 # Useful when just getting familiar with a library and type signatures
 # and typed holes are all you have
-./tidy-mklens --gen-type-alias-isos snapshots/UseTypeAliases.purs
+./tidy-mklens.js --gen-type-alias-isos snapshots/UseTypeAliases.purs
 
 # By default, any record labels referenced in your types will
 # have their corresponding lense generated using the style
 # `_propLabelName`. You can swap out 'prop' for your own
 # custom prefix...
-./tidy-mklens --label-prefix "prop" snapshots/UseLabelPrefix.purs
+./tidy-mklens.js --label-prefix "prop" snapshots/UseLabelPrefix.purs
 
 # ... or none at all (e.g. `_labelName`).
-./tidy-mklens --label-prefix-none snapshots/UseNoLabelPrefix.purs
+./tidy-mklens.js --label-prefix-none snapshots/UseNoLabelPrefix.purs
 
 # If the same label is used in multiple types,
 # a lens for that label will be stored in each file,
 # thereby duplicating the lens. This can lead to
 # import frency.
 
-./tidy-mklens snapshots/UseLocalProps/
+./tidy-mklens.js snapshots/UseLocalProps/
 
 # One way around this is to generate a single file
 # that stores all lenses for the deduplicated labels,
 # ensuring that label lenses are only imported from
 # one place.
-./tidy-mklens \
+./tidy-mklens.js \
   --global-record-lens-overwrite-file \
   --global-record-lens-file snapshots/UseGlobalPropFile/GlobalRecordLens.purs \
   --global-record-lens-module Snapshots.UseGlobalPropFile.GlobalRecordLens \
   snapshots/UseGlobalPropFile
 
 # Here's the primary example, showing the full power of the code
-./tidy-mklens --gen-type-alias-isos snapshots/PrimaryExample.purs
+./tidy-mklens.js --gen-type-alias-isos snapshots/PrimaryExample.purs
 
 # Open imports aren't always handled correctly. See these snapshots
-./tidy-mklens snapshots/CheckOpenImports
+./tidy-mklens.js snapshots/CheckOpenImports
 ```
 
 ## Assumptions
