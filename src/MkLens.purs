@@ -471,13 +471,6 @@ dropTyVarKind = case _ of
   TypeVarKinded (Wrapped { value: Labeled { label: n } }) -> TypeVarName n
   n -> n
 
-  {-
-    1. We never import open imports unless we come across a type we cannot find.
-
-    2. When we import something as open, we don't know if the open import will clash with another type
-        so we may need to open import a module with hidden members.
-        However, we won't know this information until after handling every type.
-  -}
 genImportedType
   :: Partial
   => GenOpticInfo
