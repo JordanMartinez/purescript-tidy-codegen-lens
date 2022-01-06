@@ -23,6 +23,7 @@ tidy-mklens
       tidy-mklens --global-record-lens-module RecordLens src
       tidy-mklens --label-style-abc src
       tidy-mklens --gen-type-alias-lenses src
+      tidy-mklens --output-dir src .spago/*/*/src/**/*.purs:4
 
     --gen-type-alias-isos,-t                      Generate isos for type aliases
     --global-record-lens-module,-m MODULE_PATH    The full module path to use for the single record label lenses file
