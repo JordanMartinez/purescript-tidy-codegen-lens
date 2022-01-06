@@ -51,17 +51,17 @@ main = do
     Right { prefixedGlobs, options } -> launchAff_ do
       files <- globsToFileInfo options.outputDir prefixedGlobs
       labelSets <- traverse (generateLensModule options) files
-      for_ options.genGlobalPropFile \{ filePath, moduleName, overwrite } -> do
-        let labelNameSet = Array.foldl Set.union Set.empty labelSets
+      for_ options.genGlobalPropFile \{ filePath, modulePath } -> do
+        let
+          labelNameSet = Array.foldl Set.union Set.empty labelSets
+          globalPropFile = Path.concat [ options.outputDir, filePath ]
         unless (Set.isEmpty labelNameSet) do
           let
-            content = printModule $ unsafePartial $ codegenModule moduleName do
+            content = printModule $ unsafePartial $ codegenModule modulePath do
               genLensProp options.labelPrefix labelNameSet
-          alreadyExists <- FSA.exists filePath
-          unless (alreadyExists && not overwrite) do
-            unlessM (FSA.exists $ dirname filePath) do
-              FSA.mkdir $ dirname filePath
-            FSA.writeTextFile UTF8 filePath content
+          unlessM (FSA.exists $ dirname globalPropFile) do
+            FSA.mkdir $ dirname globalPropFile
+          FSA.writeTextFile UTF8 globalPropFile content
 
 globsToFileInfo :: String -> Array PrefixedGlob -> Aff (Array FileInfo)
 globsToFileInfo outputDir = map join <<< traverse \{ glob, dirCount } -> do

@@ -20,14 +20,15 @@ tidy-mklens
 
     Examples:
       tidy-mklens src
-      tidy-mklens -w -p src/RecordLens.purs -m RecordLens src
+      tidy-mklens --global-record-lens-module RecordLens src
       tidy-mklens --label-style-abc src
       tidy-mklens --gen-type-alias-lenses src
 
     --gen-type-alias-isos,-t                      Generate isos for type aliases
-    --global-record-lens-file,-p FILE_PATH        Output record label lenses to this single file rather than in each module's file (e.g. `src/RecordLens.purs`)
-    --global-record-lens-module,-m MODULE_PATH    The full module path to use for the single record label lenses file (e.g `Foo.Bar.Lens`)
-    --global-record-lens-overwrite-file,-w        Overwrite the single file if it already exists
+    --global-record-lens-module,-m MODULE_PATH    The full module path to use for the single record label lenses file
+                                                  (e.g `Foo.Bar.Lens`). The module will be outtputed to a file based
+                                                  on the module path (e.g. `Foo.Bar.Lens` will be saved to
+                                                  `<outputDir>/Foo/Bar/Lens.purs`).
     --help,-h                                     Show this help message.
     --label-prefix,-l PREFIX                      Use `_PREFIXFoo` for the lens for a record '{ foo :: a }'
     --label-prefix-none,-n                        Use '_foo' for the lens for a record '{ foo :: a }'
@@ -93,9 +94,7 @@ Files were generated using the below commands, which are stored in [regen-snapsh
 # one place.
 ./tidy-mklens.js \
   --output-dir snapshots \
-  --global-record-lens-overwrite-file \
-  --global-record-lens-file snapshots/UseGlobalPropFile/GlobalRecordLens.purs \
-  --global-record-lens-module Snapshots.UseGlobalPropFile.GlobalRecordLens \
+  --global-record-lens-module UseGlobalPropFile.GlobalRecordLens \
   snapshots/UseGlobalPropFile
 
 # Here's the primary example, showing the full power of the code
@@ -135,8 +134,6 @@ For example, the `lenses` folder contains the output of running this command, wh
   --output-dir lenses \
   --gen-type-alias-isos \
   --label-prefix-none \
-  --global-record-lens-overwrite-file \
-  --global-record-lens-file lenses/RecordLens.purs \
   --global-record-lens-module Dependencies.RecordLens \
   .spago/*/*/src/**/*.purs:4
 ```

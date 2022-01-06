@@ -28,9 +28,7 @@ rm \
 
 ./tidy-mklens.js \
   --output-dir snapshots \
-  --global-record-lens-overwrite-file \
-  --global-record-lens-file snapshots/UseGlobalPropFile/GlobalRecordLens.purs \
-  --global-record-lens-module Snapshots.UseGlobalPropFile.GlobalRecordLens \
+  --global-record-lens-module UseGlobalPropFile.GlobalRecordLens \
   snapshots/UseGlobalPropFile
 
 ./tidy-mklens.js --gen-type-alias-isos  --output-dir snapshots snapshots/PrimaryExample.purs

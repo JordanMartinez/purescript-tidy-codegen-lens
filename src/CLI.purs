@@ -5,6 +5,7 @@ import Prelude
 import ArgParse.Basic (ArgError, anyNotFlag, argument, boolean, choose, default, flag, flagHelp, flagInfo, fromRecord, optional, parseArgs, unfolded1, unformat)
 import Control.Monad.Error.Class (throwError)
 import Data.Array (fold)
+import Data.Array as Array
 import Data.Either (Either)
 import Data.Foldable (for_)
 import Data.FoldableWithIndex (findWithIndex)
@@ -17,7 +18,7 @@ import Data.String.NonEmpty.Internal as NES
 import Data.String.Regex (test)
 import Data.String.Regex.Flags (noFlags)
 import Data.String.Regex.Unsafe (unsafeRegex)
-import Node.Path (FilePath, basenameWithoutExt, extname)
+import Node.Path (FilePath)
 import Node.Path as Path
 import Types (RecordLabelStyle(..))
 import Version (versionStr)
@@ -69,7 +70,7 @@ type CliArgs =
     -- | Enabling this feature means a single `RecordLens.purs`
     -- | file will be generated where each label's lens
     -- | is generated only once.
-    genGlobalPropFile :: Maybe { filePath :: FilePath, moduleName :: String, overwrite :: Boolean }
+    genGlobalPropFile :: Maybe { filePath :: FilePath, modulePath :: String }
 
   ,
     -- | By default, this will be "prop", so that a record label `{ foo :: a }`
@@ -108,7 +109,7 @@ parseCliArgs =
         , ""
         , "Examples:"
         , "  tidy-mklens src"
-        , "  tidy-mklens -w -p src/RecordLens.purs -m RecordLens src"
+        , "  tidy-mklens --global-record-lens-module RecordLens src"
         , "  tidy-mklens --label-style-abc src"
         , "  tidy-mklens --gen-type-alias-lenses src"
         , "  tidy-mklens --output-dir src .spago/*/*/src/**/*.purs:4"
@@ -157,28 +158,15 @@ parseCliArgs =
 
   genGlobalPropFile =
     optional
-      ( fromRecord
-          { filePath:
-              argument [ "--global-record-lens-file", "-p" ] "Output record label lenses to this single file rather than in each module's file (e.g. `src/RecordLens.purs`)"
-                # unformat "FILE_PATH" validateFilePath
-          , moduleName:
-              argument [ "--global-record-lens-module", "-m" ] "The full module path to use for the single record label lenses file (e.g `Foo.Bar.Lens`)"
-                # unformat "MODULE_PATH" validateModulePath
-          , overwrite:
-              flag [ "--global-record-lens-overwrite-file", "-w" ] "Overwrite the single file if it already exists"
-                # boolean
-          }
+      ( argument [ "--global-record-lens-module", "-m" ] description
+          # unformat "MODULE_PATH" validateModulePath
       )
     where
-    validateFilePath s = do
-      when (s == "") do
-        throwError "Invalid file path. File path must not be an empty string"
-      when (extname s /= ".purs") do
-        throwError "Invalid file path. File path must end with `.purs` file extension"
-      when (basenameWithoutExt s ".purs" == "") do
-        throwError "Invalid file path. File path's base name must not be empty"
-      pure s
-
+    description = joinWith ""
+      [ "The full module path to use for the single record label lenses file (e.g `Foo.Bar.Lens`). "
+      , "The module will be outtputed to a file based on the module path (e.g. `Foo.Bar.Lens` "
+      , "will be saved to `<outputDir>/Foo/Bar/Lens.purs`)."
+      ]
     validateModulePath s = do
       when (s == "") do
         throwError "Invalid module path. Module path must not be an empty string"
@@ -194,7 +182,11 @@ parseCliArgs =
       for_ firstCharCheck \r ->
         throwError $ "Invalid module path. First character for segment at index " <> show r.index <> ", '" <> r.value <> "', is not uppercased"
 
-      pure s
+      case Array.unsnoc segments of
+        Nothing ->
+          throwError "Invalid module path. Module path does not contain any segments."
+        Just { init, last } ->
+          pure { modulePath: s, filePath: Path.concat $ Array.snoc init $ last <> ".purs" }
 
     firstCharIsUppercase s = do
       let firstChar = String.take 1 s
