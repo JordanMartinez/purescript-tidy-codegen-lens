@@ -30,12 +30,17 @@ tidy-mklens
     --global-record-lens-overwrite-file,-w        Overwrite the single file if it already exists
     --help,-h                                     Show this help message.
     --label-prefix,-l PREFIX                      Use `_PREFIXFoo` for the lens for a record '{ foo :: a }'
-    --label-prefix-none,-n                        Use '_foo' for the lens for a record '{ foo :: a}'
+    --label-prefix-none,-n                        Use '_foo' for the lens for a record '{ foo :: a }'
     --label-style-abc,-b                          Data constructors with 3+ args will use record labels based on the alphabet (e.g. 'a', 'b', ..., 'z', 'aa', 'ab', ...)
     --label-style-arg,-a                          Data constructors with 3+ args will use record labels of 'argN' (e.g. 'arg1', 'arg2', ..., 'argN')
+    --output-dir,-o                               The directory into which to write the generated files
+                                                  (defaults to `src`).
     --version,-v                                  Shows the current version
 
-    PURS_GLOBS                                    Globs for PureScript sources.
+    GLOB[:DIR_STRIP_COUNT]                        Globs for PureScript sources (e.g. `src` `test/**/*.purs`)
+                                                  and the number of root directories to strip from each file
+                                                  path (defaults to 1) that are separated by the OS-specific
+                                                  path delimiter (POSIX: ':', Windows: ';')
 ```
 
 ## Examples
@@ -57,46 +62,83 @@ Files were generated using the below commands, which are stored in [regen-snapsh
 
 ```bash
 # Note: the `arg` style is the default
-./tidy-mklens.js --label-style-arg snapshots/UseArgLabelStyle.purs
+./tidy-mklens.js --label-style-arg --output-dir snapshots snapshots/UseArgLabelStyle.purs
 
-./tidy-mklens.js --label-style-abc snapshots/UseAbcLabelStyle.purs
+./tidy-mklens.js --label-style-abc --output-dir snapshots snapshots/UseAbcLabelStyle.purs
 
 # Can optionally generate lenses for type aliases
 # Useful when just getting familiar with a library and type signatures
 # and typed holes are all you have
-./tidy-mklens.js --gen-type-alias-isos snapshots/UseTypeAliases.purs
+./tidy-mklens.js --gen-type-alias-isos --output-dir snapshots snapshots/UseTypeAliases.purs
 
 # By default, any record labels referenced in your types will
 # have their corresponding lense generated using the style
 # `_propLabelName`. You can swap out 'prop' for your own
 # custom prefix...
-./tidy-mklens.js --label-prefix "prop" snapshots/UseLabelPrefix.purs
+./tidy-mklens.js --label-prefix "prop" --output-dir snapshots snapshots/UseLabelPrefix.purs
 
 # ... or none at all (e.g. `_labelName`).
-./tidy-mklens.js --label-prefix-none snapshots/UseNoLabelPrefix.purs
+./tidy-mklens.js --label-prefix-none --output-dir snapshots snapshots/UseNoLabelPrefix.purs
 
 # If the same label is used in multiple types,
 # a lens for that label will be stored in each file,
 # thereby duplicating the lens. This can lead to
 # import frency.
 
-./tidy-mklens.js snapshots/UseLocalProps/
+./tidy-mklens.js --output-dir snapshots snapshots/UseLocalProps/
 
 # One way around this is to generate a single file
 # that stores all lenses for the deduplicated labels,
 # ensuring that label lenses are only imported from
 # one place.
 ./tidy-mklens.js \
+  --output-dir snapshots \
   --global-record-lens-overwrite-file \
   --global-record-lens-file snapshots/UseGlobalPropFile/GlobalRecordLens.purs \
   --global-record-lens-module Snapshots.UseGlobalPropFile.GlobalRecordLens \
   snapshots/UseGlobalPropFile
 
 # Here's the primary example, showing the full power of the code
-./tidy-mklens.js --gen-type-alias-isos snapshots/PrimaryExample.purs
+./tidy-mklens.js --gen-type-alias-isos  --output-dir snapshots snapshots/PrimaryExample.purs
 
 # Open imports aren't always handled correctly. See these snapshots
-./tidy-mklens.js snapshots/CheckOpenImports
+./tidy-mklens.js --output-dir snapshots snapshots/CheckOpenImports
+```
+
+### Explaining the `GLOB[:DIR_STRIP_COUNT]` arg
+
+The generated file's file path is based on the input file's file path. Most of the time, one will use this program to generate optics for the `src` directory. However, in monorepos, there may be multiple directories that contains PureScript source code. This feature exists to account for those use cases.
+
+The `glob:<int>` indicates how many parent directories, starting from the file's relative path's root, to strip from the outputted file's file path. When not specified, the `DIR_STIP_COUNT` defaults to `1`.
+
+For example, let's say the `src` directory has the following structure:
+```
+/src
+  /Foo
+    /Bar.purs
+```
+
+Running `./tidy-mklens.js --output-dir lenses src:X` where `X` is one of the integers listed in the below table will produce the corresponding output:
+
+| X |  Output file | Explanation |
+| - | - | - |
+| 1<br />(default) | `lenses/Foo/Bar/Lens.purs` | the `src` segment was removed |
+| 2 | `lenses/Bar/Lens.purs` | the `src` and `Foo` segments were removed |
+| 3 | `lenses/Lens.purs` | the `src`, `Foo`, and `Bar` segments were removed |
+| 4 | `lenses/Lens.purs` | Since there are only 3 segments available, this is no different than when X is 3 |
+
+This feature enables one to run this program against all of a projects dependencies (as stored in the `.spago` folder) and output the results into a new folder. This can be accomplished via the glob `.spago/*/*/src/**/*.purs:4`, which says, "If you come across a file `.spago/packageName/version/src/Foo/Bar.purs`, strip the first four root directories (e.g. `.spago/packageName/version/src`), and append the result (e.g. `Foo/Bar.purs`) to the output directory (e.g. `<outputDir>/Foo/Bar.purs`).
+
+For example, the `lenses` folder contains the output of running this command, which is stored in [regen-lenses.sh](./regen-lenses.sh):
+```sh
+./tidy-mklens.js \
+  --output-dir lenses \
+  --gen-type-alias-isos \
+  --label-prefix-none \
+  --global-record-lens-overwrite-file \
+  --global-record-lens-file lenses/RecordLens.purs \
+  --global-record-lens-module Dependencies.RecordLens \
+  .spago/*/*/src/**/*.purs:4
 ```
 
 ## Assumptions

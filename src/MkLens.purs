@@ -29,10 +29,10 @@ import Data.Tuple (Tuple(..), snd)
 import Effect.Aff (Aff)
 import Effect.Class (liftEffect)
 import Effect.Exception (throw)
+import MkDir as MkDir
 import Node.Encoding (Encoding(..))
 import Node.FS.Aff as FSA
-import Node.Path (basenameWithoutExt, dirname, extname)
-import Node.Path as Path
+import Node.Path (dirname)
 import Partial.Unsafe (unsafePartial)
 import PureScript.CST (RecoveredParserResult(..), parseModule)
 import PureScript.CST.Types (DataCtor(..), DataMembers(..), Declaration(..), Export(..), FixityOp(..), Foreign(..), Import(..), ImportDecl(..), Label(..), Labeled(..), Module(..), ModuleBody(..), ModuleHeader(..), ModuleName, Name(..), Operator, Proper, QualifiedName(..), Row(..), Separated(..), Type(..), TypeVarBinding(..), Wrapped(..))
@@ -97,13 +97,18 @@ instance Semigroup DataCtorMembers where
 
 type ExportedTypeMap = Map Proper DataCtorMembers
 
+type FileInfo =
+  { inputFile :: String
+  , outputFile :: String
+  }
+
 -- | Uses a two-step pass to generate all lenses/prisms for a file
 -- | 1. Generate a lens/prism for a data type and newtype
 -- | 2. Generate a lens for each label referenced in the previous generated
 -- |    lenses or prisms.
-generateLensModule :: CliArgs -> String -> Aff (Set String)
-generateLensModule options filePath = do
-  content <- FSA.readTextFile UTF8 filePath
+generateLensModule :: CliArgs -> FileInfo -> Aff (Set String)
+generateLensModule options { inputFile, outputFile } = do
+  content <- FSA.readTextFile UTF8 inputFile
   case parseModule content of
     ParseSucceeded cst -> do
       let
@@ -129,14 +134,15 @@ generateLensModule options filePath = do
       when (hasDecls generatedModule) do
         let
           outputtedContent = printModule generatedModule
-          parentDir = Path.concat [ dirname filePath, basenameWithoutExt filePath (extname filePath) ]
+          parentDir = dirname outputFile
+
         unlessM (FSA.exists parentDir) do
-          FSA.mkdir parentDir
-        FSA.writeTextFile UTF8 (Path.concat [ parentDir, "Lens.purs" ]) outputtedContent
+          MkDir.mkdirRecAff parentDir
+        FSA.writeTextFile UTF8 outputFile outputtedContent
       pure labelNames
     _ ->
       liftEffect $ throw $
-        "Parsing module for file path failed. Could not generate lens file for path: '" <> filePath <> "'"
+        "Parsing module for file path failed. Could not generate lens file for path: '" <> inputFile <> "'"
   where
   reimportOpenHidingImports :: _ -> _
   reimportOpenHidingImports { modName, modAlias, hiddenTypes } = do

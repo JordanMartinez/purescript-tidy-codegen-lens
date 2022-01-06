@@ -14,24 +14,25 @@ rm \
   snapshots/UseLabelPrefix/Lens.purs \
   snapshots/UseNoLabelPrefix/Lens.purs
 
-./tidy-mklens.js --label-style-arg snapshots/UseArgLabelStyle.purs
+./tidy-mklens.js --label-style-arg --output-dir snapshots snapshots/UseArgLabelStyle.purs
 
-./tidy-mklens.js --label-style-abc snapshots/UseAbcLabelStyle.purs
+./tidy-mklens.js --label-style-abc --output-dir snapshots snapshots/UseAbcLabelStyle.purs
 
-./tidy-mklens.js --gen-type-alias-isos snapshots/UseTypeAliases.purs
+./tidy-mklens.js --gen-type-alias-isos --output-dir snapshots snapshots/UseTypeAliases.purs
 
-./tidy-mklens.js --label-prefix "prop" snapshots/UseLabelPrefix.purs
+./tidy-mklens.js --label-prefix "prop" --output-dir snapshots snapshots/UseLabelPrefix.purs
 
-./tidy-mklens.js --label-prefix-none snapshots/UseNoLabelPrefix.purs
+./tidy-mklens.js --label-prefix-none --output-dir snapshots snapshots/UseNoLabelPrefix.purs
 
-./tidy-mklens.js snapshots/UseLocalProps/
+./tidy-mklens.js --output-dir snapshots snapshots/UseLocalProps/
 
 ./tidy-mklens.js \
+  --output-dir snapshots \
   --global-record-lens-overwrite-file \
   --global-record-lens-file snapshots/UseGlobalPropFile/GlobalRecordLens.purs \
   --global-record-lens-module Snapshots.UseGlobalPropFile.GlobalRecordLens \
   snapshots/UseGlobalPropFile
 
-./tidy-mklens.js --gen-type-alias-isos snapshots/PrimaryExample.purs
+./tidy-mklens.js --gen-type-alias-isos  --output-dir snapshots snapshots/PrimaryExample.purs
 
-./tidy-mklens.js snapshots/CheckOpenImports
+./tidy-mklens.js  --output-dir snapshots snapshots/CheckOpenImports

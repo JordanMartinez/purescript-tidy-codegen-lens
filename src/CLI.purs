@@ -4,9 +4,11 @@ import Prelude
 
 import ArgParse.Basic (ArgError, anyNotFlag, argument, boolean, choose, default, flag, flagHelp, flagInfo, fromRecord, optional, parseArgs, unfolded1, unformat)
 import Control.Monad.Error.Class (throwError)
+import Data.Array (fold)
 import Data.Either (Either)
 import Data.Foldable (for_)
 import Data.FoldableWithIndex (findWithIndex)
+import Data.Int as Int
 import Data.Maybe (Maybe(..))
 import Data.String (Pattern(..), joinWith)
 import Data.String as String
@@ -16,6 +18,7 @@ import Data.String.Regex (test)
 import Data.String.Regex.Flags (noFlags)
 import Data.String.Regex.Unsafe (unsafeRegex)
 import Node.Path (FilePath, basenameWithoutExt, extname)
+import Node.Path as Path
 import Types (RecordLabelStyle(..))
 import Version (versionStr)
 
@@ -85,9 +88,15 @@ type CliArgs =
     -- | - `AlphabetRecordLabels`: `Foo a b c d -> { a, b, c, d }`
     -- | - `ArgRecordLabels`: `Foo a b c d -> { arg1: a, arg2: b, arg3: c, arg4: d }`
     recordLabelStyle :: RecordLabelStyle
+  , outputDir :: String
   }
 
-parseCliArgs :: Array String -> Either ArgError { globs :: Array String, options :: CliArgs }
+type PrefixedGlob =
+  { glob :: String
+  , dirCount :: Int
+  }
+
+parseCliArgs :: Array String -> Either ArgError { prefixedGlobs :: Array PrefixedGlob, options :: CliArgs }
 parseCliArgs =
   parseArgs
     "tidy-mklens"
@@ -102,18 +111,20 @@ parseCliArgs =
         , "  tidy-mklens -w -p src/RecordLens.purs -m RecordLens src"
         , "  tidy-mklens --label-style-abc src"
         , "  tidy-mklens --gen-type-alias-lenses src"
+        , "  tidy-mklens --output-dir src .spago/*/*/src/**/*.purs:4"
         ]
     )
     parser
   where
   parser =
-    { globs: _, options: _ }
+    { prefixedGlobs: _, options: _ }
       <$> pursGlobs
       <*> fromRecord
             { genTypeAliasLens
             , genGlobalPropFile
             , recordLabelStyle
             , labelPrefix
+            , outputDir
             }
       <* flagInfo [ "--version", "-v" ] "Shows the current version" versionStr
       <* flagHelp
@@ -143,6 +154,7 @@ parseCliArgs =
       [ "--gen-type-alias-isos", "-t" ]
       "Generate isos for type aliases"
       # boolean
+
   genGlobalPropFile =
     optional
       ( fromRecord
@@ -198,6 +210,41 @@ parseCliArgs =
           "Data constructors with 3+ args will use record labels based on the alphabet (e.g. 'a', 'b', ..., 'z', 'aa', 'ab', ...)"
       ]
       # default ArgRecordLabels
+
+  outputDir =
+    argument [ "--output-dir", "-o" ] "The directory into which to write the generated files (defaults to `src`)."
+      # default "src"
+
   pursGlobs =
-    anyNotFlag "PURS_GLOBS" "Globs for PureScript sources."
+    anyNotFlag globExample description
+      # unformat globExample validate
       # unfolded1
+    where
+    description = joinWith ""
+      [ "Globs for PureScript sources (e.g. `src` `test/**/*.purs`) "
+      , "and the number of root directories to strip from each file path (defaults to 1) "
+      , "that are separated by the OS-specific path delimiter (POSIX: ':', Windows: ';'), "
+      ]
+    delimit l r = l <> Path.delimiter <> r
+    globExample = delimit "GLOB[" "DIR_STRIP_COUNT]"
+    validate s = do
+      case String.split (String.Pattern Path.delimiter) s of
+        [ glob, dirStripCount ]
+          | Just dirCount <- Int.fromString dirStripCount -> pure { glob, dirCount }
+          | otherwise -> throwError $ fold
+              [ "Invalid source glob. Expected directory strip count to be an integer "
+              , "but was '"
+              , s
+              , "'"
+              ]
+
+        [ glob ] -> pure { glob, dirCount: 1 }
+        _ -> throwError $ joinWith ""
+          [ "Invalid source glob. Expected either a glob (e.g. `src`) "
+          , "or a glob and the prefix to strip separated by a '"
+          , Path.delimiter
+          , "' character "
+          , "(e.g. `"
+          , delimit ".spago/*/*/src/**/*.purs" "4"
+          , "`)"
+          ]
